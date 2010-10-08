@@ -1,0 +1,24 @@
+The files in this directory are a user-contributed package for LAMMPS.
+
+This package implements the Green's function molecular dynamics, by
+introducing two more fixes to LAMMPS. The first one, FixGFC, is used
+to measure the effective elastic stiffness coefficients based on the
+fluctuation-dissipation theorem. The second one, FixGFMD, is used to
+evaluate the effective elastic forces by using the elastic stiffness
+coefficients.
+
+See the documentation files of these commands for detailed usage.
+
+The compiling of this package along with LAMMPS requires the FFT3d wrappers
+from the kspace package of LAMMPS be included as well. An example of the
+Makefile is also available in this directory.
+
+Besides, you should also append 'user-gfmd' to the 'PACKUSER' variable
+in the file of src/Makefile before invoke `make yes-user-gfmd`.
+
+
+Directories:
+1) doc     : contains the documents of FixGFC/FixGFMD for current release;
+2) examle  : contains examples to use FixGFC/FixGFMD;
+
+version: 1.12 / Oct 3, 2010
