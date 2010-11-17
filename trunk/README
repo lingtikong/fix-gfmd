@@ -21,4 +21,13 @@ Directories:
 1) doc     : contains the documents of FixGFC/FixGFMD for current release;
 2) examle  : contains examples to use FixGFC/FixGFMD;
 
+References:
+     1) Phys. Rev. B 74(7):075420, 2006.
+     2) Computer Physics Communications 180(6):1004-1010, 2009.
+     3) Computer Physics Communications 182(2):540-541, 2011.
+
+NOTE: This package won't work if LAMMPS is compiled as serial version
+      with the mpi library in src/STUBS, as this mpi library is not
+      complete and the functions FixGFC/FixGFMD needed are not implemented.
+
 version: 1.12 / Oct 3, 2010
