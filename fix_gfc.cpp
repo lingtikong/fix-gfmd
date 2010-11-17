@@ -24,6 +24,11 @@
         Saarbrucken, Germany
 
      mmuser@uwo.ca, cdennist@uwo.ca, konglt@gmail.com
+
+   References:
+     1) Phys. Rev. B 74(7):075420, 2006.
+     2) Computer Physics Communications 180(6):1004-1010, 2009.
+     3) Computer Physics Communications 182(2):540-541, 2011.
 ------------------------------------------------------------------------- */
 
 #include "atom.h"

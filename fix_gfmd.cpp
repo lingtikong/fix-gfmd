@@ -24,6 +24,11 @@
         Saarbrucken, Germany
 
      mmuser@uwo.ca, cdennist@uwo.ca, konglt@gmail.com
+
+   References:
+     1) Phys. Rev. B 74(7):075420, 2006.
+     2) Computer Physics Communications 180(6):1004-1010, 2009.
+     3) Computer Physics Communications 182(2):540-541, 2011.
 ------------------------------------------------------------------------- */
 
 #include "atom.h"
@@ -1049,9 +1054,8 @@ void FixGFMD::readphi()
     }
     Phi_q0_ASR(Phi_in[0]);
 
-    /* Now to interpolate the Phi_q we needed!
-       Bilinear interpolation is employed for boundary elements;
-       while bicubic interpolation is used elsewhere. */
+    /* Now to interpolate the Phi_q we need!
+       Bicubic interpolation is used. */
     int ix, iy, xP1, xM1, yP1, yM1, Idx, Ix, Iy;
     int ppx, ppy, pmx, pmy, mpx, mpy, mmx, mmy;
     double dx1, dx2, facx, facy;
