@@ -40,9 +40,9 @@ class FixGFC : public Fix {
 
  private:
   int me,nprocs;
-  int waitsteps;                                // wait these number of timesteps before recording atom positions
+  bigint waitsteps;                             // wait these number of timesteps before recording atom positions
+  bigint prev_nstep;                            // number of steps from previous run(s); to judge if waitsteps is reached.
   int nfreq, ifreq;                             // after this number of measurement (nfreq), the result will be output once
-  int prev_nstep;                               // number of steps from previous run(s); to judge if waitsteps is reached.
   int nx,ny,nucell;                             // surface dimensions in x- and y-direction, number of atom per unit surface cell
   int origin_tag;                               // tag of the surface origin
   int GFcounter;                                // counter variables
@@ -91,10 +91,6 @@ class FixGFC : public Fix {
   // private methods to do matrix inversion
   void GaussJordan(int, double *);
   void GaussJordan(int, std::complex<double>*);
-
-  // private methods to allocate and deallocate 2D complex arrays.
-  std::complex<double> **create_2d_complex_array(int, int, const char *);
-  void destroy_2d_complex_array(std::complex<double> **);
 
 };
 }

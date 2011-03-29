@@ -64,7 +64,7 @@ FixGFC::FixGFC(LAMMPS *lmp,  int narg, char **arg) : Fix(lmp, narg, arg)
   nfreq  = atoi(arg[4]);   // frequency to output result
   if (nfreq <=0) error->all("Illegal fix gfc command");
 
-  waitsteps = atoi(arg[5]); // Wait this many timesteps before actually measuring GFC's
+  waitsteps = ATOBIGINT(arg[5]); // Wait this many timesteps before actually measuring GFC's
   if (waitsteps < 0) error->all("fix gfc: waitsteps < 0 ! Please provide non-negative number!");
 
   int n = strlen(arg[6]) + 1;
@@ -164,23 +164,23 @@ FixGFC::FixGFC(LAMMPS *lmp,  int narg, char **arg) : Fix(lmp, narg, arg)
   fft_data = (double *) memory->smalloc(MAX(1,mynq)*2*sizeof(double),"fix_gfc:fft_data");
 
   // allocate variables; MAX(1,... is used because NULL buffer will result in error for MPI
-  RIloc = memory->create_2d_double_array(nGFatoms,(sysdim+1),"fix_gfc:RIloc");
-  RIall = memory->create_2d_double_array(nGFatoms,(sysdim+1),"fix_gfc:RIall");
-  Rsort = memory->create_2d_double_array(nGFatoms, sysdim, "fix_gfc:Rsort");
+  RIloc = memory->create(RIloc,nGFatoms,(sysdim+1),"fix_gfc:RIloc");
+  RIall = memory->create(RIall,nGFatoms,(sysdim+1),"fix_gfc:RIall");
+  Rsort = memory->create(Rsort,nGFatoms, sysdim, "fix_gfc:Rsort");
 
-  Rnow  = memory->create_2d_double_array(MAX(1,mynpt),fft_dim,"fix_gfc:Rnow");
-  Rsum  = memory->create_2d_double_array(MAX(1,mynpt),fft_dim,"fix_gfc:Rsum");
+  Rnow  = memory->create(Rnow ,MAX(1,mynpt),fft_dim,"fix_gfc:Rnow");
+  Rsum  = memory->create(Rsum ,MAX(1,mynpt),fft_dim,"fix_gfc:Rsum");
 
-  surfbasis = memory->create_2d_double_array(nucell, sysdim, "fix_gfc:surfbasis");
+  surfbasis = memory->create(surfbasis,nucell, sysdim, "fix_gfc:surfbasis");
 
   // because of hermit, only nearly half of q points are stored
-  Rqnow = create_2d_complex_array(MAX(1,mynq),fft_dim, "fix_gfc:Rqnow");
-  Rqsum = create_2d_complex_array(MAX(1,mynq),fft_dim2,"fix_gfc:Rqsum");
-  Phi_q = create_2d_complex_array(MAX(1,mynq),fft_dim2,"fix_gfc:Phi_q");
+  Rqnow = memory->create(Rqnow,MAX(1,mynq),fft_dim, "fix_gfc:Rqnow");
+  Rqsum = memory->create(Rqsum,MAX(1,mynq),fft_dim2,"fix_gfc:Rqsum");
+  Phi_q = memory->create(Phi_q,MAX(1,mynq),fft_dim2,"fix_gfc:Phi_q");
   if (me == 0) // variable to collect all local Phi to root
-    Phi_all = create_2d_complex_array(nx*ny,fft_dim2,"fix_gfc:Phi_all");
+    Phi_all = memory->create(Phi_all,nx*ny,fft_dim2,"fix_gfc:Phi_all");
   else
-    Phi_all = create_2d_complex_array(1,1,"fix_gfc:Phi_all");
+    Phi_all = memory->create(Phi_all,1,1,"fix_gfc:Phi_all");
 
   // output some information on the system to log file
   surfvec[0][0] = domain->h[0]/double(nx);
@@ -204,7 +204,7 @@ FixGFC::FixGFC(LAMMPS *lmp,  int narg, char **arg) : Fix(lmp, narg, arg)
     fprintf(gfclog,"# number of atoms per unit surface cell    : %d\n", nucell);
     fprintf(gfclog,"# dimension of the FFT mesh                : %d x %d\n", nx, ny);
     fprintf(gfclog,"# atomic tag of the surface origin         : %d\n", origin_tag);
-    fprintf(gfclog,"# number of wait steps before measurement  : %d\n", waitsteps);
+    fprintf(gfclog,"# number of wait steps before measurement  : " BIGINT_FORMAT "\n", waitsteps);
     fprintf(gfclog,"# frequency of GFC measurement             : %d\n", nevery);
     fprintf(gfclog,"# output result after this many measurement: %d\n", nfreq);
     fprintf(gfclog,"# number of processors used by this run    : %d\n", nprocs);
@@ -247,17 +247,17 @@ FixGFC::~FixGFC()
   if (me == 0) fclose(gfclog);
 
   // delete locally stored array
-  memory->destroy_2d_double_array(RIloc);
-  memory->destroy_2d_double_array(RIall);
-  memory->destroy_2d_double_array(Rsort);
-  memory->destroy_2d_double_array(Rnow);
-  memory->destroy_2d_double_array(Rsum);
-  memory->destroy_2d_double_array(surfbasis);
+  memory->destroy(RIloc);
+  memory->destroy(RIall);
+  memory->destroy(Rsort);
+  memory->destroy(Rnow);
+  memory->destroy(Rsum);
+  memory->destroy(surfbasis);
 
-  destroy_2d_complex_array(Rqnow);
-  destroy_2d_complex_array(Rqsum);
-  destroy_2d_complex_array(Phi_q);
-  destroy_2d_complex_array(Phi_all);
+  memory->destroy(Rqnow);
+  memory->destroy(Rqsum);
+  memory->destroy(Phi_q);
+  memory->destroy(Phi_all);
 
   delete []recvcnts;
   delete []displs;
@@ -598,7 +598,7 @@ void FixGFC::compmap(int flag)
     for (int i=0; i<nlocal; i++){
       if (tag[i] == origin_tag){
         domain->unmap(x[i],image[i],vx);
-        if (mask[i] & groupbit == 0) {
+        if ( (mask[i] & groupbit) == 0) {
           error->one("fix gfc: specified surface origin atom not in group!");
           return;
         }
@@ -637,8 +637,8 @@ void FixGFC::compmap(int flag)
   // now to calculate the mapping info
   int ix, iy, iu;
   int **IndxLoc, **IndxAll;
-  IndxLoc = memory->create_2d_int_array(nGFatoms,2,"fix_gfc:IndxLoc");
-  IndxAll = memory->create_2d_int_array(nGFatoms,2,"fix_gfc:IndxAll");
+  IndxLoc = memory->create(IndxLoc,nGFatoms,2,"fix_gfc:IndxLoc");
+  IndxAll = memory->create(IndxAll,nGFatoms,2,"fix_gfc:IndxAll");
 
   nfind =0;
   for (int i = 0; i < nlocal; i++) {
@@ -679,8 +679,8 @@ void FixGFC::compmap(int flag)
     tag2surf[itag] = idx;
     surf2tag[idx]  = itag;
   }
-  memory->destroy_2d_int_array(IndxLoc);
-  memory->destroy_2d_int_array(IndxAll);
+  memory->destroy(IndxLoc);
+  memory->destroy(IndxAll);
 
   origin_tag = surf2tag[0];
 
@@ -775,7 +775,7 @@ void FixGFC::postprocess( )
     char fname[MAXLINE];
     FILE *GFC_bin;
 
-    sprintf(fname,"%s.bin.%d",prefix,update->ntimestep);
+    sprintf(fname,"%s.bin." BIGINT_FORMAT, prefix,update->ntimestep);
     GFC_bin = fopen(fname,"wb");
 
     fwrite(&sysdim, sizeof(int),    1, GFC_bin);
@@ -792,7 +792,7 @@ void FixGFC::postprocess( )
 
     // write log file
     for (int i=0; i<60; i++) fprintf(gfclog,"#"); fprintf(gfclog,"\n");
-    fprintf(gfclog, "# Current time step                      : %d\n", update->ntimestep);
+    fprintf(gfclog, "# Current time step                      : " BIGINT_FORMAT "\n", update->ntimestep);
     fprintf(gfclog, "# Total number of GFC measurements       : %d\n", GFcounter);
     fprintf(gfclog, "# Average temperature of the measurement : %lg\n", TempAve);
     fprintf(gfclog, "# Boltzmann constant under current units : %lg\n", boltz);
@@ -819,36 +819,6 @@ void FixGFC::postprocess( )
   }
 
 }   // end of postprocess
-
-/* ----------------------------------------------------------------------
- * private method, to allocate memory for 2d complex array; make use of
- * the corresponding methods in memory.
- * --------------------------------------------------------------------*/
-
-std::complex<double> **FixGFC::create_2d_complex_array(int n1, int n2, const char *name)
-{
-  std::complex<double> *data   = (std::complex<double>  *) memory->smalloc(n1*n2*sizeof(std::complex<double>),name);
-  std::complex<double> **array = (std::complex<double> **) memory->smalloc(n1*sizeof(std::complex<double> *),name);
-
-  int n = 0;
-  for (int i = 0; i < n1; i++) {
-    array[i] = &data[n];
-    n += n2;
-  }
-  return array;
-}
-
-/* ----------------------------------------------------------------------
- * private method, to destroy memory allocated for 2d complex array;
- * make use of the corresponding methods in memory.
- * --------------------------------------------------------------------*/
-
-void FixGFC::destroy_2d_complex_array(std::complex<double> **array)
-{
-  if (array == NULL) return;
-  memory->sfree(array[0]);
-  memory->sfree(array);
-}
 
 /* ----------------------------------------------------------------------
  * private method, to get the inverse of a double precision matrix
