@@ -113,10 +113,6 @@ class FixGFMD : public Fix {
   void MatMulMat(int,double*,double*,double*);                              // matrix-matrix multiplication
   void MatMulMat(int,std::complex<double>*,std::complex<double>*,std::complex<double>*);
 
-  // private methods to allocate/deallocate 2D complex arrays
-  std::complex<double> **create_2d_complex_array(int, int, const char *);
-  void destroy_2d_complex_array(std::complex<double> **);
-
 };
 
 }

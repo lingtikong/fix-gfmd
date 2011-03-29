@@ -189,11 +189,11 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
 
   // allocating real space working arrays; UIrLoc and UIrAll will be used in
   // determining the original position as well as the mapping
-  xeq      = memory->create_2d_double_array(nGFatoms,sysdim,"fix_gfmd:xeq");
-  UIrLoc   = memory->create_2d_double_array(nGFatoms,sysdim+1,"fix_gfmd:UIrLoc");
-  UIrAll   = memory->create_2d_double_array(nGFatoms,sysdim+1,"fix_gfmd:UIrAll");
-  UFrSort  = memory->create_2d_double_array(nGFatoms,sysdim,"fix_gfmd:UFrSort");
-  FrAll    = memory->create_2d_double_array(nGFatoms,sysdim,"fix_gfmd:FrAll");
+  xeq     = memory->create(xeq    ,nGFatoms,sysdim,"fix_gfmd:xeq");
+  UIrLoc  = memory->create(UIrLoc ,nGFatoms,sysdim+1,"fix_gfmd:UIrLoc");
+  UIrAll  = memory->create(UIrAll ,nGFatoms,sysdim+1,"fix_gfmd:UIrAll");
+  UFrSort = memory->create(UFrSort,nGFatoms,sysdim,"fix_gfmd:UFrSort");
+  FrAll   = memory->create(FrAll  ,nGFatoms,sysdim,"fix_gfmd:FrAll");
 
   tag2surf.clear(); // clear map info
   surf2tag.clear();
@@ -280,7 +280,7 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
 
   if (nucell == 1) nasr = 1;
   // allocate memory and get Phi_q, only store those relevant to local proc
-  Phi_q = create_2d_complex_array(MAX(1,mynq), fft_dim2, "fix_gfmd:Phi_q");
+  Phi_q = memory->create(Phi_q,MAX(1,mynq), fft_dim2, "fix_gfmd:Phi_q");
   if (instyle & 2){ readphi(); delete []file_phi; } // read Phi_q from binary file from FixGFC run
   else Phi_analytic();                              // Claculate analytic Phi_q for simple cubic lattice
 
@@ -291,8 +291,8 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
   }
 
   // allocating remaining working arrays; MAX(1,.. is used to avoid MPI buffer error
-  UFrnow = memory->create_2d_double_array(MAX(1,mynpt),fft_dim,"fix_gfmd:UFrnow");
-  UFqnow = create_2d_complex_array(MAX(1,mynq), fft_dim, "fix_gfmd:UFqnow");
+  UFrnow = memory->create(UFrnow,MAX(1,mynpt),fft_dim,"fix_gfmd:UFrnow");
+  UFqnow = memory->create(UFqnow,MAX(1,mynq), fft_dim, "fix_gfmd:UFqnow");
 
   // enable to return original forces before they are changed
   extvector = 1;
@@ -339,14 +339,14 @@ FixGFMD::~FixGFMD()
   delete []displs;
 
   // delete arrays grow by memory->..
-  memory->destroy_2d_double_array(UIrLoc);
-  memory->destroy_2d_double_array(UIrAll);
-  memory->destroy_2d_double_array(UFrSort);
-  memory->destroy_2d_double_array(FrAll);
-  memory->destroy_2d_double_array(UFrnow);
-  destroy_2d_complex_array(UFqnow);
-  destroy_2d_complex_array(Phi_q);
-  memory->destroy_2d_double_array(xeq);
+  memory->destroy(UIrLoc);
+  memory->destroy(UIrAll);
+  memory->destroy(UFrSort);
+  memory->destroy(FrAll);
+  memory->destroy(UFrnow);
+  memory->destroy(UFqnow);
+  memory->destroy(Phi_q);
+  memory->destroy(xeq);
 
   // clear map
   tag2surf.clear();
@@ -567,7 +567,7 @@ void FixGFMD::Phi_analytic()
 
   double qx, qy;
   std::complex<double> **G_q;
-  G_q = create_2d_complex_array(sysdim,sysdim, "FixGFMD:G_q");
+  G_q = memory->create(G_q,sysdim,sysdim, "FixGFMD:G_q");
 
   if (sysdim == 2){    // (1+1) D system
     idq = 0;
@@ -597,7 +597,7 @@ void FixGFMD::Phi_analytic()
       }
     }
   } // end of if (sysdim ==
-  destroy_2d_complex_array(G_q);
+  memory->destroy(G_q);
 
   return;
 }
@@ -1041,7 +1041,7 @@ void FixGFMD::readphi()
 
   }else{ // Dimension from GFC run and current mismatch, interpolation needed!
     std::complex<double> **Phi_in;  // read in Phi_q from file
-    Phi_in = create_2d_complex_array(Nx*Ny, fft_dim2, "fix_gfmd:Phi_in");
+    Phi_in = memory->create(Phi_in,Nx*Ny, fft_dim2, "fix_gfmd:Phi_in");
     idq = 0;
     for (int i=0; i<Nx; i++){
       for (int j=0; j<Ny; j++){
@@ -1158,7 +1158,7 @@ void FixGFMD::readphi()
     delete []Phi_p1;
     delete []Phi_p2;
     delete []Phi_p12;
-    destroy_2d_complex_array(Phi_in);
+    memory->destroy(Phi_in);
     if (me == 0) fprintf(gfmdlog,"\nPhi_q interpolated from file: %s\n", file_phi);
   }
 
@@ -1377,10 +1377,10 @@ void FixGFMD::end_of_step()
     char file_for[MAXLINE];
     FILE *fp;
 
-    sprintf(file_for,"%s.%d", prefix, update->ntimestep);
+    sprintf(file_for,"%s." BIGINT_FORMAT, prefix, update->ntimestep);
     fp = fopen(file_for, "w");
 
-    fprintf(fp,"# Elastic forces acting on GF layer, timestep=%d\n",update->ntimestep);
+    fprintf(fp,"# Elastic forces acting on GF layer, timestep= " BIGINT_FORMAT "\n",update->ntimestep);
     fprintf(fp,"# Size Info: %lg %lg %lg %d %d\n", domain->xprd, domain->yprd,
       domain->xy, nGFatoms, sysdim);
     fprintf(fp,"# Extra force added on each GF atom: %lg\n", load);
@@ -1412,36 +1412,6 @@ double FixGFMD::memory_usage()
                + sizeof(std::complex<double>) * MAX(1,mynq) * fft_dim * (1+fft_dim)
                + sizeof(double) * 2 * mynq;
   return bytes;
-}
-
-/* ----------------------------------------------------------------------
- * private method, to allocate memory for complex array, making use of
- * corresponding methods from memory.
- * --------------------------------------------------------------------*/
-
-std::complex<double> **FixGFMD::create_2d_complex_array(int n1, int n2, const char *name)
-{
-  std::complex<double> *data   = (std::complex<double>  *) memory->smalloc(n1*n2*sizeof(std::complex<double>),name);
-  std::complex<double> **array = (std::complex<double> **) memory->smalloc(n1*sizeof(std::complex<double> *),name);
-
-  int n = 0;
-  for (int i = 0; i < n1; i++) {
-    array[i] = &data[n];
-    n += n2;
-  }
-  return array;
-}
-
-/* ----------------------------------------------------------------------
- * private method, to release memory allocated for complex array, making
- * use of corresponding methods from memory.
- * --------------------------------------------------------------------*/
-
-void FixGFMD::destroy_2d_complex_array(std::complex<double> **array)
-{
-  if (array == NULL) return;
-  memory->sfree(array[0]);
-  memory->sfree(array);
 }
 
 /* ----------------------------------------------------------------------
