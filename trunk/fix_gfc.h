@@ -34,6 +34,8 @@ class FixGFC : public Fix {
 
   int  setmask();
   void init();
+  void setup();
+  void post_run();
   void end_of_step();
   double memory_usage();
   int modify_param(int, char **);
