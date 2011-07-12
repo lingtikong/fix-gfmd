@@ -240,12 +240,18 @@ FixGFC::FixGFC(LAMMPS *lmp,  int narg, char **arg) : Fix(lmp, narg, arg)
 
 /* ---------------------------------------------------------------------- */
 
-FixGFC::~FixGFC()
+void FixGFC::post_run()
 {
   // compute and output final GFC results
   if (GFcounter%nfreq) postprocess();
   if (me == 0) fclose(gfclog);
 
+}
+
+/* ---------------------------------------------------------------------- */
+
+FixGFC::~FixGFC()
+{
   // delete locally stored array
   memory->destroy(RIloc);
   memory->destroy(RIall);
@@ -295,7 +301,12 @@ void FixGFC::init()
   int count = 0;
   for (int i=0;i<modify->nfix;i++) if (strcmp(modify->fix[i]->style,"gfc") == 0) count++;
   if (count > 1 && me == 0) error->warning("More than one fix gfc defined"); // just warn, but allowed.
+}
 
+/* ---------------------------------------------------------------------- */
+
+void FixGFC::setup()
+{
   // initialize accumulating variables
   for (int i=0; i<sysdim; i++) TempSum[i] = 0.;
   for (int i=0; i<mynpt; i++){

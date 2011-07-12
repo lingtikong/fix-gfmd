@@ -35,6 +35,7 @@ class FixGFMD : public Fix {
 
   int  setmask();
   void init();
+  void post_run();
   void post_force(int);
   void end_of_step();
   double memory_usage();

@@ -324,11 +324,17 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
 
 /* ---------------------------------------------------------------------- */
 
-FixGFMD::~FixGFMD()
+void FixGFMD::post_run()
 {
   // always write the elastic force at the final step
   if (noutfor<=0 || update->ntimestep%nevery!=0) end_of_step();
 
+}
+
+/* ---------------------------------------------------------------------- */
+
+FixGFMD::~FixGFMD()
+{
   // delete arrays allocated by new
   delete []prefix;
   delete []fft_cnts;
