@@ -387,7 +387,7 @@ void FixGFMD::init()
   }
   if (count > 1 && me == 0) error->warning("More than one fix gfmd"); // just warn, but it is allowed
 
-} //end ::init()
+} 
 
 /* ---------------------------------------------------------------------- */
 
