@@ -305,7 +305,7 @@ void FixGFC::init()
 
 /* ---------------------------------------------------------------------- */
 
-void FixGFC::setup()
+void FixGFC::setup(int flag)
 {
   // initialize accumulating variables
   for (int i=0; i<sysdim; i++) TempSum[i] = 0.;
