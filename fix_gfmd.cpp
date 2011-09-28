@@ -57,7 +57,7 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
   MPI_Comm_rank(world,&me);
   MPI_Comm_size(world,&nprocs);
 
-  if (narg<5) error->all("Illegal fix gfmd command: number of arguments < 5");
+  if (narg<5) error->all(FLERR,"Illegal fix gfmd command: number of arguments < 5");
   
   int iarg = 3;
   int n = strlen(arg[iarg]) + 1;
@@ -65,16 +65,16 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
   strcpy(prefix, arg[iarg++]);
 
   instyle = atoi(arg[iarg]);        // get instyle
-  if (instyle<0||instyle>3) error->all("fix gfmd: Wrong command line option");
+  if (instyle<0||instyle>3) error->all(FLERR,"Wrong command line option");
 
   if (instyle & 1){                 // get original position file name, if supplied
-    if ((iarg+2)>narg) error->all("fix gfmd: Insufficient command line options");
+    if ((iarg+2)>narg) error->all(FLERR,"Insufficient command line options");
     n = strlen(arg[++iarg])+1;
     file_xorg = new char[n];
     strcpy(file_xorg,arg[iarg]);
   }
   if (instyle & 2){                 // get binary Phi file name, if supplied
-    if ((iarg+2)>narg) error->all("fix gfmd: Insufficient command line options");
+    if ((iarg+2)>narg) error->all(FLERR,"Insufficient command line options");
     n = strlen(arg[++iarg])+1;
     file_phi = new char[n];
     strcpy(file_phi,arg[iarg]);
@@ -94,26 +94,26 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
   while (iarg < narg){
     // surface vector U. if not given, will be determined from lattice info
     if (strcmp(arg[iarg],"su") == 0){
-      if (iarg+3 > narg) error->all("fix gfmd: Insufficient command option for su.");
+      if (iarg+3 > narg) error->all(FLERR,"Insufficient command option for su.");
       surfvec[0][0] = atof(arg[++iarg]);
       surfvec[0][1] = atof(arg[++iarg]);
       fsurfmap |= 1;
 
     // surfactor vector V. if not given for 3D, will be determined from lattice info
     } else if (strcmp(arg[iarg],"sv") == 0){
-      if (iarg+3 > narg) error->all("fix gfmd: Insufficient command option for sv.");
+      if (iarg+3 > narg) error->all(FLERR,"Insufficient command option for sv.");
       surfvec[1][0] = atof(arg[++iarg]);
       surfvec[1][1] = atof(arg[++iarg]);
       fsurfmap |= 2;
 
     // to get the tag of surface origin atom
     } else if (strcmp(arg[iarg],"origin") == 0){
-      if (iarg+2 > narg) error->all("fix gfmd: Insufficient command option for origin.");
+      if (iarg+2 > narg) error->all(FLERR,"Insufficient command option for origin.");
       origin_tag = atoi(arg[++iarg]);
 
     // read the mapping of surface atoms from file, no surface vector is needed now
     } else if (strcmp(arg[iarg],"map") == 0){
-      if (iarg+2 > narg) error->all("fix gfmd: Insufficient command option for map.");
+      if (iarg+2 > narg) error->all(FLERR,"Insufficient command option for map.");
       if (mapfile) delete []mapfile;
       n = strlen(arg[++iarg]) + 1;
       mapfile = new char [n];
@@ -122,35 +122,35 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
 
     // extra load added to GF atoms
     } else if (strcmp(arg[iarg],"load") ==0){
-      if (iarg+2 > narg) error->all("fix gfmd: Insufficient command option for load.");
+      if (iarg+2 > narg) error->all(FLERR,"Insufficient command option for load.");
       load = atof(arg[++iarg]);
 
     // frequency to output elastic force
     } else if (strcmp(arg[iarg],"output") ==0){
-      if (iarg+2 > narg) error->all("fix gfmd: Insufficient command option for output.");
+      if (iarg+2 > narg) error->all(FLERR,"Insufficient command option for output.");
       noutfor = atoi(arg[++iarg]);
 
     // whether/how to reset xeq based on surface lattice info from gfc
     } else if (strcmp(arg[iarg],"reset_xeq") ==0){
-      if (iarg+2 > narg) error->all("fix gfmd: Insufficient command option for reset_xeq.");
+      if (iarg+2 > narg) error->all(FLERR,"Insufficient command option for reset_xeq.");
       iarg++;
       if (strcmp(arg[iarg],"none")==0) reset_xeq = 0;
       else if (strcmp(arg[iarg],"all")==0) reset_xeq = 3;
       else if (strcmp(arg[iarg],"last") ==0) reset_xeq = 1;
-      else error->all("fix gfmd: wrong command option for reset_xeq.");
+      else error->all(FLERR,"Wrong command option for reset_xeq.");
 
     } else if (strcmp(arg[iarg],"reset_f") ==0){
-      if (iarg+2 > narg) error->all("fix gfmd: Insufficient command option for reset_f.");
+      if (iarg+2 > narg) error->all(FLERR,"Insufficient command option for reset_f.");
       if (strcmp(arg[++iarg],"yes")==0) reset_force = 1;
       
     } else if (strcmp(arg[iarg],"nasr") ==0){
-      if (iarg+2 > narg) error->all("fix gfmd: Insufficient command option for nasr.");
+      if (iarg+2 > narg) error->all(FLERR,"Insufficient command option for nasr.");
       nasr = atoi(arg[++iarg]);
       
     } else {
       char str[MAXLINE];
-      sprintf(str,"fix gfmd: Unknown command line option: %s", arg[iarg]);
-      error->all(str);
+      sprintf(str,"Unknown command line option: %s", arg[iarg]);
+      error->all(FLERR,str);
     }
 
     iarg++;
@@ -169,7 +169,7 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
   nGFatoms   = static_cast<int>(group->count(igroup));
   masstotal  = group->mass(igroup);
   rmasstotal = 1./masstotal;
-  if (nGFatoms<1) error->all("fix gfmd: no atom is passed to gfmd");
+  if (nGFatoms<1) error->all(FLERR,"No atom is passed to gfmd");
 
   // open the log file on root
   if (me == 0){
@@ -178,7 +178,7 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
     gfmdlog = fopen(str,"w");
     if (gfmdlog == NULL){
       sprintf(str,"Cannot open log file: gfmd.%s.log",prefix);
-      error->one(str);
+      error->one(FLERR,str);
     }
     fprintf(gfmdlog, "GFMD initialization...\n");
     fprintf(gfmdlog, "Number of processors used    : %d\n", nprocs);
@@ -385,7 +385,7 @@ void FixGFMD::init()
   for (int i = 0; i < modify->nfix; i++){
     if (strcmp(modify->fix[i]->style,"gfmd") == 0) count++;
   }
-  if (count > 1 && me == 0) error->warning("More than one fix gfmd"); // just warn, but it is allowed
+  if (count > 1 && me == 0) error->warning(FLERR,"More than one fix gfmd."); // just warn, but it is allowed
 
 } 
 
@@ -569,7 +569,7 @@ double FixGFMD::compute_vector(int n)
 void FixGFMD::Phi_analytic()
 {
   if (me == 0) fprintf(gfmdlog,"\nPhi_q is computed for simple cubic system.\n");
-  if (nucell !=1) error->all("fix gfmd: analytical Phi works only for simple cubic system");
+  if (nucell !=1) error->all(FLERR,"Analytical Phi works only for simple cubic system");
 
   double qx, qy;
   std::complex<double> **G_q;
@@ -727,9 +727,9 @@ void FixGFMD::readxorg()
   fp = fopen(file_xorg, "r");
   if (fp == NULL){
     char str[MAXLINE];
-    sprintf(str,"fix gfmd: cannot open original position file: %s", file_xorg);
+    sprintf(str,"Cannot open original position file: %s", file_xorg);
     if (me == 0){ fprintf(gfmdlog,"\n%s\n",str); fflush(gfmdlog); }
-    error->one(str);
+    error->one(FLERR,str);
   }
   
   xcur[2] = 0.;
@@ -746,8 +746,8 @@ void FixGFMD::readxorg()
 
   if (info){
     char str[MAXLINE];
-    sprintf(str,"fix gfmd: Error while reading initial configuration from file: %s",file_xorg);
-    error->one(str);
+    sprintf(str,"Error while reading initial configuration from file: %s",file_xorg);
+    error->one(FLERR,str);
   }
   if (me == 0) fprintf(gfmdlog, "\nOriginal positions of GF atoms are read from file: %s\n", file_xorg);
 
@@ -808,23 +808,23 @@ void FixGFMD::readmap()
   fp = fopen(mapfile, "r");
   if (fp == NULL){
     char str[MAXLINE];
-    sprintf(str,"fix gfmd: cannot open mapping file: %s", mapfile);
+    sprintf(str,"Cannot open mapping file: %s", mapfile);
     if (me == 0){ fprintf(gfmdlog,"\n%s\n",str); fflush(gfmdlog); }
-    error->one(str);
+    error->one(FLERR,str);
   }
 
   if (fgets(strtmp,MAXLINE,fp) == NULL){
     char str[MAXLINE];
-    sprintf(str,"fix gfmd: Error %d while reading header info from file: %s",info,mapfile);
-    error->one(str);
+    sprintf(str,"Error %d while reading header info from file: %s",info,mapfile);
+    error->one(FLERR,str);
   }
   sscanf(strtmp,"%d %d %d", &nx, &ny, &nucell); // first line carries nx,ny and nucell; for (1+1)D system, ny = 1
-  if (nx*ny*nucell != nGFatoms) error->all("fix gfmd: number of atoms from FFT mesh and group mismatch");
+  if (nx*ny*nucell != nGFatoms) error->all(FLERR,"Number of atoms from FFT mesh and group mismatch");
 
   if (fgets(strtmp,MAXLINE,fp) == NULL){ // second line of mapfile is comment
     char str[MAXLINE];
-    sprintf(str,"fix gfmd: Error %d while reading comment line from file: %s",info,mapfile);
-    error->one(str);
+    sprintf(str,"Error %d while reading comment line from file: %s",info,mapfile);
+    error->one(FLERR,str);
   }
 
   int ix, iy, iu;
@@ -842,8 +842,8 @@ void FixGFMD::readmap()
   if (surf2tag.size() != tag2surf.size() || tag2surf.size() != static_cast<std::size_t>(nGFatoms)) info = 4;
   if (info != 0){
     char str[MAXLINE];
-    sprintf(str,"fix gfmd: Error %d while reading mapping info from file: %s",info,mapfile);
-    error->one(str);
+    sprintf(str,"Error %d while reading mapping info from file: %s",info,mapfile);
+    error->one(FLERR,str);
   }
 
   // check the correctness of mapping
@@ -855,7 +855,7 @@ void FixGFMD::readmap()
     if (mask[i] & groupbit){
       itag = tag[i];
       idx  = tag2surf[itag];
-      if (itag != surf2tag[idx]) error->one("fix gfmd: atom in group not found in mapping info");
+      if (itag != surf2tag[idx]) error->one(FLERR,"Atom in group not found in mapping info");
     }
   }
   origin_tag = surf2tag[0];
@@ -877,7 +877,7 @@ void FixGFMD::compmap(int flag)
   if ((flag & 3) != 3){
     // Check if lattice information is available from input file!
     if (domain->lattice == NULL){ // get surface vectors from lattice info; orthogonal lattice is assumed
-      error->all("fix gfmd: No lattice defined while keyword su and/or sv not set");
+      error->all(FLERR,"No lattice defined while keyword su and/or sv not set");
     }
     if ((flag & 1) == 0){
       surfvec[0][0] = domain->lattice->xlattice;
@@ -890,11 +890,11 @@ void FixGFMD::compmap(int flag)
   }
   // check the validity of the surface vectors read from command line
   if (fabs(surfvec[0][1]) > 0.0 && fabs(surfvec[1][0]) > 0.0)
-    error->all("fix gfmd: Either U or V must be on the box side");
+    error->all(FLERR,"Either U or V must be on the box side");
   if (surfvec[0][0] <= 0.0)
-    error->all("fix gfmd: Surface vector U must be along the +x direction");
+    error->all(FLERR,"Surface vector U must be along the +x direction");
   if (surfvec[1][1] <= 0.0)
-    error->all("fix gfmd: Surface vector V must point to the +y direction");
+    error->all(FLERR,"Surface vector V must point to the +y direction");
 
   double invSurfV[2][2];
   for (int i=0; i<2; i++){ invSurfV[i][0] = surfvec[i][0]; invSurfV[i][1] = surfvec[i][1];}
@@ -909,10 +909,10 @@ void FixGFMD::compmap(int flag)
   nx = int(domain->xprd*invSurfV[0][0]+0.1);
   ny = (sysdim == 2)?1:int(domain->yprd*invSurfV[1][1]+0.1);
   if (nx<1 || nx>nGFatoms || ny<1 || ny>nGFatoms)
-    error->all("fix gfmd: error encountered while getting FFT dimensions");
+    error->all(FLERR,"Error encountered while getting FFT dimensions");
 
   nucell = nGFatoms / (nx*ny);
-  if (nucell > 2) error->all("fix gfmd: mapping info cannot be computed for nucell > 2");
+  if (nucell > 2) error->all(FLERR,"Mapping info cannot be computed for nucell > 2");
 
   int ix, iy, iu;
   double vx[2], vi[2], SurfOrigin[2];
@@ -927,7 +927,7 @@ void FixGFMD::compmap(int flag)
         break;
       }
     }
-    if (nfind < 1) error->all("fix gfmd: surface origin given by user not found");
+    if (nfind < 1) error->all(FLERR,"Surface origin given by user not found");
   }else{
     SurfOrigin[0] = UIrAll[0][0];
     SurfOrigin[1] = UIrAll[0][1];
@@ -951,7 +951,7 @@ void FixGFMD::compmap(int flag)
     surf2tag[idx]  = itag;
   }
   if (tag2surf.size() != surf2tag.size() || (int)tag2surf.size() != nGFatoms)
-    error->one("fix gfmd: Error encountered while computing mapping info");
+    error->one(FLERR,"Error encountered while computing mapping info");
 
   // check the correctness of mapping
   int *mask  = atom->mask;
@@ -962,7 +962,7 @@ void FixGFMD::compmap(int flag)
     if (mask[i] & groupbit){
       itag = tag[i];
       idx  = tag2surf[itag];
-      if (itag != surf2tag[idx]) error->one("fix gfmd: atom in group not found in mapping info");
+      if (itag != surf2tag[idx]) error->one(FLERR,"Atom in group not found in mapping info");
     }
   }
   origin_tag = surf2tag[0];
@@ -986,42 +986,42 @@ void FixGFMD::readphi()
   std::size_t nread;
 
   gfc_in = fopen(file_phi, "rb");
-  if (gfc_in == NULL) error->all("fix gfmd: error while opening binary Phi file");
+  if (gfc_in == NULL) error->all(FLERR,"Error while opening binary Phi file");
 
   nread = fread(&ndim,  sizeof(int),   1, gfc_in);
-  if (nread != 1) error->one("fix gfmd: error while reading ndim from binary file");
+  if (nread != 1) error->one(FLERR,"Error while reading ndim from binary file");
   nread = fread(&Nx,    sizeof(int),   1, gfc_in);
-  if (nread != 1) error->one("fix gfmd: error while reading Nx from binary file");
+  if (nread != 1) error->one(FLERR,"Error while reading Nx from binary file");
   nread = fread(&Ny,    sizeof(int),   1, gfc_in);
-  if (nread != 1) error->one("fix gfmd: error while reading Ny from binary file");
+  if (nread != 1) error->one(FLERR,"Error while reading Ny from binary file");
   nread = fread(&Nucell,sizeof(int),   1, gfc_in);
-  if (nread != 1) error->one("fix gfmd: error while reading Nucell from binary file");
+  if (nread != 1) error->one(FLERR,"Error while reading Nucell from binary file");
   nread = fread(&boltz, sizeof(double),1, gfc_in);
-  if (nread != 1) error->one("fix gfmd: error while reading boltz from binary file");
+  if (nread != 1) error->one(FLERR,"Error while reading boltz from binary file");
  
   if (ndim != sysdim){
     char str[MAXLINE];
-    sprintf(str,"fix gfmd: System dimension from GFC is %d, current is %d", ndim, sysdim);
+    sprintf(str,"System dimension from GFC is %d, current is %d", ndim, sysdim);
     if (me == 0){ fprintf(gfmdlog,"\n%s\n",str); fflush(gfmdlog); }
-    error->all(str);
+    error->all(FLERR,str);
   }
   if (Nucell != nucell){
     char str[MAXLINE];
-    sprintf(str,"fix gfmd: # of atom per cell from GFC is %d, current is %d", Nucell, nucell);
+    sprintf(str,"# of atom per cell from GFC is %d, current is %d", Nucell, nucell);
     if (me == 0){ fprintf(gfmdlog,"\n%s\n",str); fflush(gfmdlog); }
-    error->all(str);
+    error->all(FLERR,str);
   }
   if (boltz != force->boltz){
     char str[MAXLINE];
     if (boltz == 1.){
-      sprintf(str,"fix gfmd: Units used by GFC were LJ, conversion is not possible");
+      sprintf(str,"Units used by GFC were LJ, conversion is not possible");
       if (me == 0){ fprintf(gfmdlog,"\n%s\n",str); fflush(gfmdlog); }
-      error->all(str);
+      error->all(FLERR,str);
     } else {
       old2new = force->boltz / boltz;
-      sprintf(str,"fix gfmd: Units used by GFC differ from current one, converted!");
+      sprintf(str,"Units used by GFC differ from current one, converted!");
       if (me == 0) fprintf(gfmdlog,"\n%s\n",str);
-      error->warning(str);
+      error->warning(FLERR,str);
     }
   }
 
@@ -1036,11 +1036,11 @@ void FixGFMD::readphi()
     for (idq=0; idq<nxlo*ny; idq++){
       for (idim=0; idim<fft_dim2; idim++){
         nread = fread(&cmdum, sizeof(std::complex<double>), 1, gfc_in);
-        if (nread != 1) error->one("fix gfmd: error while reading Phi from binary file");
+        if (nread != 1) error->one(FLERR,"Error while reading Phi from binary file");
       }
     }
     nread = fread(Phi_q[0], sizeof(std::complex<double>), mynq*fft_dim2, gfc_in);
-    if (nread != static_cast<std::size_t>(mynq*fft_dim2)) error->one("fix gfmd: error while reading Phi from binary file");
+    if (nread != static_cast<std::size_t>(mynq*fft_dim2)) error->one(FLERR,"Error while reading Phi from binary file");
     if (me == 0) fprintf(gfmdlog,"\nPhi_q read successfully from file: %s\n", file_phi);
 
     if (nxlo==0 && mynq>0) Phi_q0_ASR(Phi_q[0]);
@@ -1053,7 +1053,7 @@ void FixGFMD::readphi()
       for (int j=0; j<Ny; j++){
         for (idim=0; idim<fft_dim2; idim++){
           nread = fread(&Phi_in[idq][idim], sizeof(std::complex<double>), 1, gfc_in);
-          if (nread != 1) error->one("fix gfmd: error while reading Phi from binary file");
+          if (nread != 1) error->one(FLERR,"Error while reading Phi from binary file");
         }
         idq++;
       }
@@ -1173,12 +1173,12 @@ void FixGFMD::readphi()
   int info_read = 1;
   nread = fread(svec_gfc[0],sizeof(double),4,gfc_in);
   if (nread != 4){
-    error->warning("fix gfmd: failed to read surface vector info from binary file");
+    error->warning(FLERR,"Failed to read surface vector info from binary file");
     info_read = 0;
   }
   nread = fread(sb_gfc,sizeof(double),fft_dim, gfc_in);
   if (nread != static_cast<std::size_t>(fft_dim) ){
-    error->warning("fix gfmd: failed to read surface basis info from binary file");
+    error->warning(FLERR,"Failed to read surface basis info from binary file");
     info_read = 0;
   }
   fclose(gfc_in);
@@ -1226,7 +1226,7 @@ void FixGFMD::readphi()
     ly2gfc = svec_gfc[1][0]*svec_gfc[1][0] + svec_gfc[1][1]*svec_gfc[1][1];
     dx2 = fabs(lx2now-lx2gfc); dy2 = fabs(ly2now-ly2gfc);
     if (dx2 > lx2now*2.5e-3 || dy2 > ly2now*2.5e-3){
-      if (me == 0) error->warning("fix_gfmd: surface lattice from gfc and this run mismatch, xeq not reset!");
+      if (me == 0) error->warning(FLERR,"Surface lattice from gfc and this run mismatch, xeq not reset!");
       return;
     }
     xs[0] = sqrt(lx2now/lx2gfc); xs[1] = sqrt(ly2now/ly2gfc);
@@ -1514,7 +1514,7 @@ void FixGFMD::GaussJordan(int n, double *Mat)
               icol = k;
             }
           }else if (ipiv[k] >1){
-            error->one("FixGFMD: Singular matrix in double GaussJordan!");
+            error->one(FLERR,"Singular matrix in double GaussJordan!");
           }
         }
       }
@@ -1532,7 +1532,7 @@ void FixGFMD::GaussJordan(int n, double *Mat)
     indxr[i] = irow;
     indxc[i] = icol;
     idr = icol*n+icol;
-    if (Mat[idr] == 0.) error->one("FixGFMD: Singular matrix in double GaussJordan!");
+    if (Mat[idr] == 0.) error->one(FLERR,"Singular matrix in double GaussJordan!");
     
     pivinv = 1./ Mat[idr];
     Mat[idr] = 1.;
@@ -1600,7 +1600,7 @@ void FixGFMD::GaussJordan(int n, std::complex<double> *Mat)
               icol = k;
             }
           }else if (ipiv[k]>1){
-            error->one("FixGFMD: Singular matrix in complex GaussJordan!");
+            error->one(FLERR,"Singular matrix in complex GaussJordan!");
           }
         }
       }
@@ -1618,7 +1618,7 @@ void FixGFMD::GaussJordan(int n, std::complex<double> *Mat)
     indxr[i] = irow;
     indxc[i] = icol;
     idr = icol*n+icol;
-    if (Mat[idr] == std::complex<double>(0.,0.)) error->one("FixGFMD: Singular matrix in complex GaussJordan!");
+    if (Mat[idr] == std::complex<double>(0.,0.)) error->one(FLERR,"Singular matrix in complex GaussJordan!");
     
     pivinv = 1./ Mat[idr];
     Mat[idr] = std::complex<double>(1.,0.);

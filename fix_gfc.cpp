@@ -56,16 +56,16 @@ FixGFC::FixGFC(LAMMPS *lmp,  int narg, char **arg) : Fix(lmp, narg, arg)
   MPI_Comm_rank(world,&me);
   MPI_Comm_size(world,&nprocs);
   
-  if (narg<7) error->all("Illegal fix gfc command: number of arguments < 7");
+  if (narg<7) error->all(FLERR,"Illegal fix gfc command: number of arguments < 7");
 
   nevery = atoi(arg[3]);   // Calculate this fix every n steps!
-  if (nevery <= 0) error->all("Illegal fix gfc command");
+  if (nevery <= 0) error->all(FLERR,"Illegal fix gfc command");
 
   nfreq  = atoi(arg[4]);   // frequency to output result
-  if (nfreq <=0) error->all("Illegal fix gfc command");
+  if (nfreq <=0) error->all(FLERR,"Illegal fix gfc command");
 
   waitsteps = ATOBIGINT(arg[5]); // Wait this many timesteps before actually measuring GFC's
-  if (waitsteps < 0) error->all("fix gfc: waitsteps < 0 ! Please provide non-negative number!");
+  if (waitsteps < 0) error->all(FLERR,"Illegal fix gfc command: waitsteps < 0 !");
 
   int n = strlen(arg[6]) + 1;
   prefix = new char[n];
@@ -82,26 +82,26 @@ FixGFC::FixGFC(LAMMPS *lmp,  int narg, char **arg) : Fix(lmp, narg, arg)
   while (iarg < narg){
     // surface vector U. if not given, will be determined from lattice info
     if (strcmp(arg[iarg],"su") == 0){
-      if (iarg+3 > narg) error->all("fix gfc: Insufficient command line options.");
+      if (iarg+3 > narg) error->all(FLERR,"Insufficient command line options for fix gfc.");
       surfvec[0][0] = atof(arg[++iarg]);
       surfvec[0][1] = atof(arg[++iarg]);
       fsurfmap |= 1;
 
     // surfactor vector V. if not given for 3D, will be determined from lattice info
     } else if (strcmp(arg[iarg],"sv") == 0){
-      if (iarg+3 > narg) error->all("fix gfc: Insufficient command line options.");
+      if (iarg+3 > narg) error->all(FLERR,"Insufficient command line options for fix gfc.");
       surfvec[1][0] = atof(arg[++iarg]);
       surfvec[1][1] = atof(arg[++iarg]);
       fsurfmap |= 2;
 
     // tag of surface origin atom
     } else if (strcmp(arg[iarg],"origin") == 0){
-      if (iarg+2 > narg) error->all("fix gfc: Insufficient command line options.");
+      if (iarg+2 > narg) error->all(FLERR,"Insufficient command line options for fix gfc.");
       origin_tag = atoi(arg[++iarg]);
 
     // read the mapping of surface atoms from file! no surface vector is needed now
     } else if (strcmp(arg[iarg],"map") == 0){
-      if (iarg+2 > narg) error->all("fix gfc: Insufficient command line options.");
+      if (iarg+2 > narg) error->all(FLERR,"Insufficient command line options for fix gfc.");
       if (mapfile) delete []mapfile;
       int n = strlen(arg[++iarg]) + 1;
       mapfile = new char [n];
@@ -109,7 +109,7 @@ FixGFC::FixGFC(LAMMPS *lmp,  int narg, char **arg) : Fix(lmp, narg, arg)
       fsurfmap |= 4;
 
     } else {
-      error->all("fix gfc: Unknown command line option!");
+      error->all(FLERR,"Unknown command line option for fix gfc!");
     }
     ++iarg;
   } // end of reading command line options
@@ -123,7 +123,7 @@ FixGFC::FixGFC(LAMMPS *lmp,  int narg, char **arg) : Fix(lmp, narg, arg)
 
   // get the total number of atoms in group
   nGFatoms = static_cast<int>(group->count(igroup));
-  if (nGFatoms<1) error->all("fix gfc: no atom found for GFC evaluation!");
+  if (nGFatoms<1) error->all(FLERR,"No atom found for GFC evaluation!");
 
   // MPI gatherv related variables
   recvcnts = new int[nprocs];
@@ -193,8 +193,8 @@ FixGFC::FixGFC(LAMMPS *lmp,  int narg, char **arg) : Fix(lmp, narg, arg)
     gfclog = fopen(file_log, "w");
     if (gfclog == NULL) {
       char str[MAXLINE];
-      sprintf(str,"fix gfc: Can not open output file %s",file_log);
-      error->one(str);
+      sprintf(str,"Can not open output file %s",file_log);
+      error->one(FLERR,str);
     }
 
     for (int i=0; i<60; i++) fprintf(gfclog,"#"); fprintf(gfclog,"\n");
@@ -300,7 +300,7 @@ void FixGFC::init()
   // warn if more than one gfc fix
   int count = 0;
   for (int i=0;i<modify->nfix;i++) if (strcmp(modify->fix[i]->style,"gfc") == 0) count++;
-  if (count > 1 && me == 0) error->warning("More than one fix gfc defined"); // just warn, but allowed.
+  if (count > 1 && me == 0) error->warning(FLERR,"More than one fix gfc defined"); // just warn, but allowed.
 }
 
 /* ---------------------------------------------------------------------- */
@@ -469,18 +469,18 @@ double FixGFC::memory_usage()
 int FixGFC::modify_param(int narg, char **arg)
 {
   if (strcmp(arg[0],"temp") == 0) {
-    if (narg < 2) error->all("Illegal fix_modify command");
+    if (narg < 2) error->all(FLERR,"Illegal fix_modify command");
     delete [] id_temp;
     int n = strlen(arg[1]) + 1;
     id_temp = new char[n];
     strcpy(id_temp,arg[1]);
 
     int icompute = modify->find_compute(id_temp);
-    if (icompute < 0) error->all("Could not find fix_modify temp ID");
+    if (icompute < 0) error->all(FLERR,"Could not find fix_modify temp ID");
     temperature = modify->compute[icompute];
 
     if (temperature->tempflag == 0)
-      error->all("Fix_modify temp ID does not compute temperature");
+      error->all(FLERR,"Fix_modify temp ID does not compute temperature");
     inv_nTemp = 1.0/group->count(temperature->igroup);
 
     return 2;
@@ -501,17 +501,17 @@ void FixGFC::readmap()
   fp = fopen(mapfile, "r");
   if (fp == NULL){
     char str[MAXLINE];
-    sprintf(str,"fix gfc: cannot open input map file %s", mapfile);
-    error->one(str);
+    sprintf(str,"Cannot open input map file %s", mapfile);
+    error->one(FLERR,str);
   }
 
   if (fgets(strtmp,MAXLINE,fp) == NULL)
-    error->all("fix gfc: Error while reading header of mapping file!");
+    error->all(FLERR,"Error while reading header of mapping file!");
   sscanf(strtmp,"%d %d %d", &nx, &ny, &nucell);
-  if (nx*ny*nucell != nGFatoms) error->all("fix gfc: FFT mesh and number of atoms in group mismatch!");
+  if (nx*ny*nucell != nGFatoms) error->all(FLERR,"FFT mesh and number of atoms in group mismatch!");
   
   if (fgets(strtmp,MAXLINE,fp) == NULL)    // second line of mapfile is comment
-    error->all("fix gfc: Error while reading comment of mapping file!");
+    error->all(FLERR,"Error while reading comment of mapping file!");
 
   int ix, iy, iu;
   for (int i=0; i<nGFatoms; i++){
@@ -527,8 +527,8 @@ void FixGFC::readmap()
   fclose(fp);
 
   if (tag2surf.size() != surf2tag.size() || tag2surf.size() != static_cast<std::size_t>(nGFatoms) )
-    error->all("fix gfc: the mapping is incomplete!");
-  if (info) error->all("fix gfc: Error while reading mapping file!");
+    error->all(FLERR,"The mapping is incomplete!");
+  if (info) error->all(FLERR,"Error while reading mapping file!");
   
   // check the correctness of mapping
   int *mask  = atom->mask;
@@ -539,7 +539,7 @@ void FixGFC::readmap()
     if (mask[i] & groupbit){
       itag = tag[i];
       idx  = tag2surf[itag];
-      if (itag != surf2tag[idx]) error->one("fix gfc: the mapping info read is incorrect!");
+      if (itag != surf2tag[idx]) error->one(FLERR,"The mapping info read is incorrect!");
     }
   }
   origin_tag = surf2tag[0];
@@ -556,7 +556,7 @@ void FixGFC::compmap(int flag)
   if ((flag & 3) != 3){
     // Check if lattice information is available from input file!
     if (domain->lattice == NULL) // need surface vectors from lattice info; orthogonal lattice is assumed
-      error->all("fix gfc: No lattice defined while keyword su and/or sv is not set.");
+      error->all(FLERR,"No lattice defined while keyword su and/or sv is not set.");
 
     if ((flag & 1) == 0){
       surfvec[0][0] = domain->lattice->xlattice;
@@ -569,11 +569,11 @@ void FixGFC::compmap(int flag)
   }
   // check the validity of the surface vectors read from command line.
   if (fabs(surfvec[0][1]) > 0.0 && fabs(surfvec[1][0]) > 0.0)
-    error->all("fix gfc: Either U or V must be on the box side!");
+    error->all(FLERR,"Either U or V must be on the box side!");
   if (surfvec[0][0] <= 0.0)
-    error->all("fix gfc: Surface vector U must be along the +x direction!");
+    error->all(FLERR,"Surface vector U must be along the +x direction!");
   if (surfvec[1][1] <= 0.0)
-    error->all("fix gfc: Surface vector V must point to the +y direction!");
+    error->all(FLERR,"Surface vector V must point to the +y direction!");
   
   double invSurfV[2][2];
   for (int i=0;i<2;i++){
@@ -596,11 +596,11 @@ void FixGFC::compmap(int flag)
   ny = (sysdim == 2)?1:int(domain->yprd*invSurfV[1][1]+0.1);
 
   if (nx<1 || nx>nGFatoms || ny<1 || ny>nGFatoms)
-    error->all("fix gfc: error encountered while getting FFT dimensions!");
+    error->all(FLERR,"Error encountered while getting FFT dimensions!");
 
   nucell = nGFatoms / (nx*ny);
-  if (nucell > 2) error->all("fix gfc: mapping info cannot be computed for nucell > 2!");
-  if (nx*ny*nucell != nGFatoms) error->all("fix gfc: number of atoms from FFT mesh and group mismatch!");
+  if (nucell > 2) error->all(FLERR,"Mapping info cannot be computed for nucell > 2!");
+  if (nx*ny*nucell != nGFatoms) error->all(FLERR,"Number of atoms from FFT mesh and group mismatch!");
 
   double vx[3], vi[2], SurfOrigin[2];
   // determining surface origin
@@ -610,7 +610,7 @@ void FixGFC::compmap(int flag)
       if (tag[i] == origin_tag){
         domain->unmap(x[i],image[i],vx);
         if ( (mask[i] & groupbit) == 0) {
-          error->one("fix gfc: specified surface origin atom not in group!");
+          error->one(FLERR,"Specified surface origin atom not in group!");
           return;
         }
         nfind++;
@@ -634,7 +634,7 @@ void FixGFC::compmap(int flag)
     for (int i=1; i<nprocs; i++) displs[i] = displs[i-1] + recvcnts[i-1];
     int ntotal=0;
     for (int i=0; i<nprocs; i++) ntotal += recvcnts[i];
-    if (ntotal<2) error->one("fix gfc: surface origin not found!");
+    if (ntotal<2) error->one(FLERR,"Surface origin not found!");
   }
 
   double recvbuf[nprocs][2];
@@ -696,7 +696,7 @@ void FixGFC::compmap(int flag)
   origin_tag = surf2tag[0];
 
   if (tag2surf.size() != surf2tag.size() || tag2surf.size() != static_cast<std::size_t>(nGFatoms) )
-    error->all("fix gfc: mapping info is incompleted/incorrect!");
+    error->all(FLERR,"Mapping info is incompleted/incorrect!");
 
   return;
 }
@@ -862,7 +862,7 @@ void FixGFC::GaussJordan(int n, double *Mat)
               icol = k;
             }
           }else if (ipiv[k] >1){
-            error->one("FixGFC: Singular matrix in double GaussJordan!");
+            error->one(FLERR,"Singular matrix in double GaussJordan!");
           }
         }
       }
@@ -880,7 +880,7 @@ void FixGFC::GaussJordan(int n, double *Mat)
     indxr[i] = irow;
     indxc[i] = icol;
     idr = icol*n+icol;
-    if (Mat[idr] == 0.) error->one("FixGFC: Singular matrix in double GaussJordan!");
+    if (Mat[idr] == 0.) error->one(FLERR,"Singular matrix in double GaussJordan!");
     
     pivinv = 1./ Mat[idr];
     Mat[idr] = 1.;
@@ -947,7 +947,7 @@ void FixGFC::GaussJordan(int n, std::complex<double> *Mat)
               icol = k;
             }
           }else if (ipiv[k]>1){
-            error->one("FixGFC: Singular matrix in complex GaussJordan!");
+            error->one(FLERR,"Singular matrix in complex GaussJordan!");
           }
         }
       }
@@ -965,7 +965,7 @@ void FixGFC::GaussJordan(int n, std::complex<double> *Mat)
     indxr[i] = irow;
     indxc[i] = icol;
     idr = icol*n+icol;
-    if (Mat[idr] == std::complex<double>(0.,0.)) error->one("FixGFC: Singular matrix in complex GaussJordan!");
+    if (Mat[idr] == std::complex<double>(0.,0.)) error->one(FLERR,"Singular matrix in complex GaussJordan!");
     
     pivinv = 1./ Mat[idr];
     Mat[idr] = std::complex<double>(1.,0.);
