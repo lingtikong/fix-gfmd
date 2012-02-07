@@ -45,10 +45,10 @@
 	 
 #define MAXJACOBI 100
 #define MAXLINE   256
-#define MAX(a,b) ((a)>(b)?(a):(b))
 #define SIGN(a) ((a)>0.?1.:((a)<0.?-1.:0.))
 
 using namespace LAMMPS_NS;
+using namespace FixConst;
 
 /* ---------------------------------------------------------------------- */
 

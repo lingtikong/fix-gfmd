@@ -30,4 +30,4 @@ NOTE: This package won't work if LAMMPS is compiled as serial version
       with the mpi library in src/STUBS, as this mpi library is not
       complete and the functions FixGFC/FixGFMD needed are not implemented.
 
-version: 1.6 / Jul 12, 2011
+version: 1.8 / Feb 7, 2012
