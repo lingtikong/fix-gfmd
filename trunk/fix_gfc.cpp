@@ -45,11 +45,11 @@
 #include "update.h"
 
 using namespace LAMMPS_NS;
+using namespace FixConst;
 
 #define INVOKED_SCALAR 1
 #define INVOKED_VECTOR 2
 #define MAXLINE 256
-#define MAX(a,b) ((a) > (b) ? (a) : (b))
 
 FixGFC::FixGFC(LAMMPS *lmp,  int narg, char **arg) : Fix(lmp, narg, arg)
 {
@@ -59,10 +59,10 @@ FixGFC::FixGFC(LAMMPS *lmp,  int narg, char **arg) : Fix(lmp, narg, arg)
   if (narg<7) error->all(FLERR,"Illegal fix gfc command: number of arguments < 7");
 
   nevery = atoi(arg[3]);   // Calculate this fix every n steps!
-  if (nevery <= 0) error->all(FLERR,"Illegal fix gfc command");
+  if (nevery <= 0) error->all(FLERR,"Illegal fix gfc command: nevery must >0");
 
   nfreq  = atoi(arg[4]);   // frequency to output result
-  if (nfreq <=0) error->all(FLERR,"Illegal fix gfc command");
+  if (nfreq <=0) error->all(FLERR,"Illegal fix gfc command: nfreq must >0");
 
   waitsteps = ATOBIGINT(arg[5]); // Wait this many timesteps before actually measuring GFC's
   if (waitsteps < 0) error->all(FLERR,"Illegal fix gfc command: waitsteps < 0 !");

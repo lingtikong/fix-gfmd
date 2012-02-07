@@ -3,7 +3,7 @@ Installation Guide:
 1. Download the latest version of LAMMPS from http://lammps.sandia.gov/download.html
    or http://sourceforge.net/project/showfiles.php?group_id=149493, and untar
    on your local disk; the current release of FixGFC and FixGFMD works well with
-   LAMMPS version 1 Jul 2011, as far as we know. 
+   LAMMPS version 10 Feb 2012, as far as we know. 
 
 2. Untar the current release of GFMD under the "src" directory of LAMMPS.
 
