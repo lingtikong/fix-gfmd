@@ -189,11 +189,11 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
 
   // allocating real space working arrays; UIrLoc and UIrAll will be used in
   // determining the original position as well as the mapping
-  xeq     = memory->create(xeq    ,nGFatoms,sysdim,"fix_gfmd:xeq");
-  UIrLoc  = memory->create(UIrLoc ,nGFatoms,sysdim+1,"fix_gfmd:UIrLoc");
-  UIrAll  = memory->create(UIrAll ,nGFatoms,sysdim+1,"fix_gfmd:UIrAll");
-  UFrSort = memory->create(UFrSort,nGFatoms,sysdim,"fix_gfmd:UFrSort");
-  FrAll   = memory->create(FrAll  ,nGFatoms,sysdim,"fix_gfmd:FrAll");
+  memory->create(xeq    ,nGFatoms,sysdim,"fix_gfmd:xeq");
+  memory->create(UIrLoc ,nGFatoms,sysdim+1,"fix_gfmd:UIrLoc");
+  memory->create(UIrAll ,nGFatoms,sysdim+1,"fix_gfmd:UIrAll");
+  memory->create(UFrSort,nGFatoms,sysdim,"fix_gfmd:UFrSort");
+  memory->create(FrAll  ,nGFatoms,sysdim,"fix_gfmd:FrAll");
 
   tag2surf.clear(); // clear map info
   surf2tag.clear();
@@ -268,7 +268,7 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
   for (int i=1; i<nprocs; i++) fft_disp[i] = fft_disp[i-1] + fft_cnts[i-1];
 
   fft  = new FFT3d(lmp,world,1,ny,nx,0,0,0,ny-1,nxlo,nxhi,0,0,0,ny-1,nxlo,nxhi,0,0,&mysize);
-  fft_data = (double *) memory->smalloc(mynq*2*sizeof(double),"fix_gfc:fft_data");
+  memory->create(fft_data, mynq*2, "fix_gfc:fft_data");
 
   // write FFT assignment info to log file
   if (me == 0){
@@ -280,7 +280,7 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
 
   if (nucell == 1) nasr = 1;
   // allocate memory and get Phi_q, only store those relevant to local proc
-  Phi_q = memory->create(Phi_q,MAX(1,mynq), fft_dim2, "fix_gfmd:Phi_q");
+  memory->create(Phi_q,MAX(1,mynq), fft_dim2, "fix_gfmd:Phi_q");
   if (instyle & 2){ readphi(); delete []file_phi; } // read Phi_q from binary file from FixGFC run
   else Phi_analytic();                              // Claculate analytic Phi_q for simple cubic lattice
 
@@ -291,8 +291,8 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
   }
 
   // allocating remaining working arrays; MAX(1,.. is used to avoid MPI buffer error
-  UFrnow = memory->create(UFrnow,MAX(1,mynpt),fft_dim,"fix_gfmd:UFrnow");
-  UFqnow = memory->create(UFqnow,MAX(1,mynq), fft_dim, "fix_gfmd:UFqnow");
+  memory->create(UFrnow,MAX(1,mynpt),fft_dim,"fix_gfmd:UFrnow");
+  memory->create(UFqnow,MAX(1,mynq), fft_dim, "fix_gfmd:UFqnow");
 
   // enable to return original forces before they are changed
   extvector = 1;
@@ -573,7 +573,7 @@ void FixGFMD::Phi_analytic()
 
   double qx, qy;
   std::complex<double> **G_q;
-  G_q = memory->create(G_q,sysdim,sysdim, "FixGFMD:G_q");
+  memory->create(G_q,sysdim,sysdim, "FixGFMD:G_q");
 
   if (sysdim == 2){    // (1+1) D system
     idq = 0;
@@ -1047,7 +1047,7 @@ void FixGFMD::readphi()
 
   }else{ // Dimension from GFC run and current mismatch, interpolation needed!
     std::complex<double> **Phi_in;  // read in Phi_q from file
-    Phi_in = memory->create(Phi_in,Nx*Ny, fft_dim2, "fix_gfmd:Phi_in");
+    memory->create(Phi_in,Nx*Ny, fft_dim2, "fix_gfmd:Phi_in");
     idq = 0;
     for (int i=0; i<Nx; i++){
       for (int j=0; j<Ny; j++){
