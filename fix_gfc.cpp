@@ -493,7 +493,7 @@ void FixGFC::readmap()
     if (fgets(strtmp,MAXLINE,fp) == NULL) {info = 1; break;}
     ix = atoi(strtok(strtmp, " \n\t\r\f"));
     iy = atoi(strtok(NULL,   " \n\t\r\f"));
-    iz = atoi(strtok(NULL,   " \n\t\r\f"));
+    iu = atoi(strtok(NULL,   " \n\t\r\f"));
     itag = atoi(strtok(NULL,   " \n\t\r\f"));
 
     // check if indices are in correct range
