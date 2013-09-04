@@ -156,7 +156,7 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
     iarg++;
   } // end of reading command line options
 
-  sysdim  = domain->dimension; // find the system and surface dimension
+  sysdim = domain->dimension; // find the system and surface dimension
   surfdim = sysdim-1;
   if (sysdim == 2){
     surfvec[1][0] = 0.;
@@ -169,7 +169,7 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
   nGFatoms   = static_cast<int>(group->count(igroup));
   masstotal  = group->mass(igroup);
   rmasstotal = 1./masstotal;
-  if (nGFatoms<1) error->all(FLERR,"No atom is passed to gfmd");
+  if (nGFatoms < 1) error->all(FLERR,"No atom is passed to gfmd");
 
   // open the log file on root
   if (me == 0){
@@ -212,10 +212,10 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
   else compmap(fsurfmap);
 
   // To sort xeq according to FFT mesh
-  for (int i=0; i<nGFatoms; i++){
+  for (int i = 0; i < nGFatoms; ++i){
     itag = static_cast<int>(UIrAll[i][sysdim]);
     idx  = tag2surf[itag];
-    for (int idim=0; idim<sysdim; idim++) xeq[idx][idim] = UIrAll[i][idim];
+    for (int idim = 0; idim < sysdim; ++idim) xeq[idx][idim] = UIrAll[i][idim];
   }
 
   // reset surface vectors based on box info
@@ -237,9 +237,9 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
     fprintf(gfmdlog," %d %d %d\n",nx,ny,nucell);
     fprintf(gfmdlog,"# l1 l2 k atom_id\n");
     idx=0;
-    for (int ix=0; ix<nx; ix++)
-    for (int iy=0; iy<ny; iy++)
-    for (int iu=0; iu<nucell; iu++){
+    for (int ix = 0; ix < nx; ++ix)
+    for (int iy = 0; iy < ny; ++iy)
+    for (int iu = 0; iu < nucell; ++iu){
       itag = surf2tag[idx++];
       fprintf(gfmdlog,"%d %d %d %d\n",ix,iy,iu,itag);
     }
@@ -249,11 +249,11 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
   // create FFT and initialize related variables
   int *nx_loc = new int [nprocs];
   nxlo = 0;
-  for (int i=0; i<nprocs; i++){
+  for (int i = 0; i < nprocs; ++i){
     nx_loc[i] = nx/nprocs;
-    if (i < nx%nprocs) nx_loc[i]++;
+    if (i < nx%nprocs) ++nx_loc[i];
   }
-  for (int i=0; i<me; i++) nxlo += nx_loc[i];
+  for (int i = 0; i < me; ++i) nxlo += nx_loc[i];
   nxhi  = nxlo + nx_loc[me] - 1;
   mynpt = nx_loc[me]*ny;
   mynq  = mynpt;
@@ -264,16 +264,16 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
   fft_cnts = new int[nprocs];
   fft_disp = new int[nprocs];
   fft_disp[0] = 0;
-  for (int i=0; i<nprocs; i++) fft_cnts[i] = nx_loc[i]*ny*fft_dim;
-  for (int i=1; i<nprocs; i++) fft_disp[i] = fft_disp[i-1] + fft_cnts[i-1];
+  for (int i = 0; i < nprocs; ++i) fft_cnts[i] = nx_loc[i]*ny*fft_dim;
+  for (int i = 1; i < nprocs; ++i) fft_disp[i] = fft_disp[i-1] + fft_cnts[i-1];
 
-  fft  = new FFT3d(lmp,world,1,ny,nx,0,0,0,ny-1,nxlo,nxhi,0,0,0,ny-1,nxlo,nxhi,0,0,&mysize);
+  fft = new FFT3d(lmp,world,1,ny,nx,0,0,0,ny-1,nxlo,nxhi,0,0,0,ny-1,nxlo,nxhi,0,0,&mysize);
   memory->create(fft_data, mynq*2, "fix_gfc:fft_data");
 
   // write FFT assignment info to log file
   if (me == 0){
     fprintf(gfmdlog,"\nGFMD FFTW assignment:\n");
-    for (int i=0; i<nprocs; i++) fprintf(gfmdlog,"  On proc %d mynx = %d;\n", i, nx_loc[i]);
+    for (int i = 0; i < nprocs; ++i) fprintf(gfmdlog,"  On proc %d mynx = %d;\n", i, nx_loc[i]);
     fflush(gfmdlog);
   }
   delete []nx_loc;
@@ -286,9 +286,8 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
 
   // divide Phi_q by (nx*ny) to reduce float operation after FFT
   double inv_nxny = 1./double(nx*ny);
-  for (idq=0; idq<mynq; idq++){
-    for (int idim=0; idim<fft_dim2; idim++) Phi_q[idq][idim] *= inv_nxny;
-  }
+  for (idq = 0; idq < mynq; ++idq)
+  for (int idim = 0; idim < fft_dim2; ++idim) Phi_q[idq][idim] *= inv_nxny;
 
   // allocating remaining working arrays; MAX(1,.. is used to avoid MPI buffer error
   memory->create(UFrnow,MAX(1,mynpt),fft_dim,"fix_gfmd:UFrnow");
@@ -305,13 +304,13 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
     fprintf(gfmdlog,"\nOriginal/equilibrium position of atoms in the manifold\n");
     if (sysdim == 2){
       fprintf(gfmdlog,"#index atom_ID x  y\n");
-      for (idx=0; idx<nGFatoms; idx++){
+      for (idx = 0; idx < nGFatoms; ++idx){
         itag = surf2tag[idx];
         fprintf(gfmdlog,"%d %d %lg %lg\n",idx,itag,xeq[idx][0],xeq[idx][1]);
       }
     } else {
       fprintf(gfmdlog,"#index atom_ID x  y  z\n");
-      for (idx=0; idx<nGFatoms; idx++){
+      for (idx = 0; idx < nGFatoms; ++idx){
         itag = surf2tag[idx];
         fprintf(gfmdlog,"%d %d %lg %lg %lg\n",idx,itag,xeq[idx][0],xeq[idx][1],xeq[idx][2]);
       }
@@ -320,6 +319,7 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
     fclose(gfmdlog);
   }
 
+return;
 } // end of constructor
 
 /* ---------------------------------------------------------------------- */
@@ -362,6 +362,7 @@ FixGFMD::~FixGFMD()
   delete fft;
   memory->sfree(fft_data);
 
+return;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -374,7 +375,8 @@ int FixGFMD::setmask()
     mask  |= END_OF_STEP;
     nevery = noutfor;
   }
-  return mask;
+
+return mask;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -382,11 +384,12 @@ int FixGFMD::setmask()
 void FixGFMD::init()
 {
   int count = 0;
-  for (int i = 0; i < modify->nfix; i++){
-    if (strcmp(modify->fix[i]->style,"gfmd") == 0) count++;
+  for (int i = 0; i < modify->nfix; ++i){
+    if (strcmp(modify->fix[i]->style,"gfmd") == 0) ++count;
   }
   if (count > 1 && me == 0) error->warning(FLERR,"More than one fix gfmd."); // just warn, but it is allowed
 
+return;
 } 
 
 /* ---------------------------------------------------------------------- */
@@ -413,93 +416,67 @@ void FixGFMD::post_force(int vflag)
 
   // get U(r) on local proc
   nfind = 0;
-  if (domain->triclinic == 0) {  // for orthogonal lattice
-    for (i=0; i<nlocal; i++){
-      if (mask[i] & groupbit){
-        itag = tag[i];
-        idx  = tag2surf[itag];
-  
-        xbox = (image[i] & 1023) - 512;
-        ybox = (image[i] >> 10 & 1023) - 512;
-        zbox = (image[i] >> 20) - 512;
-  
-        xcur[0] = x[i][0] + xprd*xbox;
-        xcur[1] = x[i][1] + yprd*ybox;
-        xcur[2] = x[i][2] + zprd*zbox;
+  for (i = 0; i < nlocal; ++i){
+    if (mask[i] & groupbit){
+      itag = tag[i];
+      idx  = tag2surf[itag];
 
-        for (idim=0; idim<sysdim; idim++) UIrLoc[nfind][idim] = xcur[idim];
-        UIrLoc[nfind++][sysdim] = idx;
-      }
-    }
-  }else{                      // for non-orthogonal lattice
-    for (i=0; i<nlocal; i++){
-      if (mask[i] & groupbit){
-        itag = tag[i];
-        idx  = tag2surf[itag];
-
-        xbox = (image[i] & 1023) - 512;
-        ybox = (image[i] >> 10 & 1023) - 512;
-        zbox = (image[i] >> 20) - 512;
-
-        xcur[0] = x[i][0] + h[0]*xbox + h[5]*ybox + h[4]*zbox;
-        xcur[1] = x[i][1] + h[1]*ybox + h[3]*zbox;
-        xcur[2] = x[i][2] + h[2]*zbox;
-
-        for (idim=0; idim<sysdim; idim++) UIrLoc[nfind][idim] = xcur[idim];
-        UIrLoc[nfind++][sysdim] = idx;
-      }
+      domain->unmap(x[i], image[i], xcur);
+        
+      for (idim = 0; idim < sysdim; ++idim) UIrLoc[nfind][idim] = xcur[idim];
+      UIrLoc[nfind++][sysdim] = double(idx);
     }
   }
 
   nfrecv = nfind * sysdim;
   nusend = nfind * (sysdim+1);
   displs[0] = 0;
-  for (i=0;i<nprocs;i++) findings[i] = 0;
+  for (i = 0; i < nprocs; ++i) findings[i] = 0;
 
   // Gather U(r) from all procs, then sort and redistribute to all procs for FFT
   MPI_Gather(&nfind,1,MPI_INT,findings,1,MPI_INT,0,world);
-  for (i=0;i<nprocs;i++) recvcnts[i] = findings[i] * (sysdim+1);
-  for (i=1;i<nprocs;i++) displs[i]   = displs[i-1] + recvcnts[i-1];
+  for (i = 0; i < nprocs; ++i) recvcnts[i] = findings[i] * (sysdim+1);
+  for (i = 1; i < nprocs; ++i) displs[i]   = displs[i-1] + recvcnts[i-1];
   MPI_Gatherv(UIrLoc[0],nusend,MPI_DOUBLE,UIrAll[0],recvcnts,displs,MPI_DOUBLE,0,world);
   if (me == 0){
-    for (i=0; i<nGFatoms; i++){
+    for (i = 0; i < nGFatoms; ++i){
       idx = static_cast<int>(UIrAll[i][sysdim]);
-      for (idim=0; idim<sysdim; idim++) UFrSort[idx][idim] = UIrAll[i][idim]-xeq[idx][idim];
+      for (idim = 0; idim < sysdim; ++idim) UFrSort[idx][idim] = UIrAll[i][idim] - xeq[idx][idim];
     }
   }
   MPI_Scatterv(UFrSort[0],fft_cnts,fft_disp, MPI_DOUBLE, UFrnow[0], fft_nsend, MPI_DOUBLE, 0,world);
 
   // Filling and perform FFT on local data
-  for (idim=0; idim<fft_dim; idim++){
+  for (idim = 0; idim < fft_dim; ++idim){
     int m = 0;
-    for (idx=0; idx<mynpt; idx++){
+    for (idx = 0; idx < mynpt; ++idx){
       fft_data[m++] = UFrnow[idx][idim];
       fft_data[m++] = 0.;
     }
     fft->compute(fft_data,fft_data,-1);
     m = 0;
-    for (idq=0; idq<mynq; idq++){
+    for (idq = 0; idq < mynq; ++idq){
       UFqnow[idq][idim] = std::complex<double>(fft_data[m], fft_data[m+1]);
       m += 2;
     }
   }
 
   // Perform matrix operation: F(q) = -Phi(q) x U(q)
-  for (idq=0; idq<mynq; idq++){
+  for (idq = 0; idq < mynq; ++idq){
     MatMulVec(fft_dim,Phi_q[idq],UFqnow[idq],F_q);
-    for (idim=0; idim<fft_dim; idim++) UFqnow[idq][idim] = -F_q[idim];
+    for (idim = 0; idim < fft_dim; ++idim) UFqnow[idq][idim] = -F_q[idim];
   }
 
   // Now transform F(q) to F(r)
-  for (idim=0; idim<fft_dim; idim++){
+  for (idim = 0; idim < fft_dim; ++idim){
     int m = 0;
-    for (idq=0; idq<mynq; idq++){
+    for (idq = 0; idq < mynq; ++idq){
       fft_data[m++] = real(UFqnow[idq][idim]);
       fft_data[m++] = imag(UFqnow[idq][idim]);
     }
     fft->compute(fft_data, fft_data, 1);
     m = 0;
-    for (idx=0; idx<mynpt; idx++){
+    for (idx = 0; idx < mynpt; ++idx){
       UFrnow[idx][idim] = fft_data[m];
       m += 2;
     }
@@ -508,13 +485,13 @@ void FixGFMD::post_force(int vflag)
   // gather F(r) from local proc to root and then scatter the corresponding parts back
   MPI_Gatherv(UFrnow[0], fft_nsend, MPI_DOUBLE, UFrSort[0], fft_cnts, fft_disp, MPI_DOUBLE, 0, world);
   if (me == 0){
-    for (i=0; i<nGFatoms; i++){
+    for (i = 0; i < nGFatoms; ++i){
       idx = static_cast<int>(UIrAll[i][sysdim]);
-      for (idim=0; idim<sysdim; idim++) FrAll[i][idim] = UFrSort[idx][idim];
+      for (idim = 0; idim < sysdim; ++idim) FrAll[i][idim] = UFrSort[idx][idim];
     }
   }
-  for (i=0; i<nprocs; i++) recvcnts[i] = findings[i]*sysdim;
-  for (i=1; i<nprocs; i++) displs[i]   = displs[i-1] + recvcnts[i-1];
+  for (i = 0; i < nprocs; ++i) recvcnts[i] = findings[i]*sysdim;
+  for (i = 1; i < nprocs; ++i) displs[i]   = displs[i-1] + recvcnts[i-1];
   MPI_Scatterv(FrAll[0], recvcnts, displs, MPI_DOUBLE, UFrSort[0], nfrecv, MPI_DOUBLE, 0,world);
 
   // to collect original force
@@ -524,28 +501,28 @@ void FixGFMD::post_force(int vflag)
   // add elastic force and extra load to local atoms
   nfind = 0;
   if (reset_force){ // replace force with elastic force
-    for (int i=0; i<nlocal; i++)
+    for (int i = 0; i < nlocal; ++i)
     if (mask[i] & groupbit){
-      for (idim=0; idim<sysdim; idim++){
+      for (idim = 0; idim < sysdim; ++idim){
         foriginal[idim] += f[i][idim];
         f[i][idim] = UFrSort[nfind][idim];
       }
       f[i][surfdim] += load;
-      nfind++;
+      ++nfind;
     }
   } else { // keep original force and add elastic force
-    for (i=0; i<nlocal; i++)
+    for (i = 0; i < nlocal; ++i)
     if (mask[i] & groupbit){
-      for (idim=0; idim<sysdim; idim++){
+      for (idim = 0; idim < sysdim; ++idim){
         foriginal[idim] += f[i][idim];
         f[i][idim] += UFrSort[nfind][idim];
       }
       f[i][surfdim] += load;
-      nfind++;
+      ++nfind;
     }
   }
 
-  return;
+return;
 } // end post_force(int)
 
 /* ----------------------------------------------------------------------
@@ -558,7 +535,8 @@ double FixGFMD::compute_vector(int n)
     MPI_Allreduce(foriginal,foriginal_all,sysdim,MPI_DOUBLE,MPI_SUM,world);
     collect_flag = 1;
   }
-  return foriginal_all[n];
+
+return foriginal_all[n];
 }
 
 /* ----------------------------------------------------------------------
@@ -577,43 +555,40 @@ void FixGFMD::Phi_analytic()
 
   if (sysdim == 2){    // (1+1) D system
     idq = 0;
-    for (int i=nxlo; i<=nxhi; i++){
+    for (int i = nxlo; i <= nxhi; ++i){
       qx = (i <= (nx/2)) ? (2.0*M_PI*i/nx) : (2.0*M_PI*(i-nx)/nx);
 
       Phi_analytic_2D(qx, G_q);
       int ndim = 0;
-      for (int idim=0; idim<sysdim; idim++){
-        for (int jdim=0; jdim<sysdim; jdim++) Phi_q[idq][ndim++] = G_q[idim][jdim];
-      }
-      idq++;
+      for (int idim = 0; idim < sysdim; ++idim)
+      for (int jdim = 0; jdim < sysdim; ++jdim) Phi_q[idq][ndim++] = G_q[idim][jdim];
+
+      ++idq;
     }
-  }else{               // (2+1) D system
+  } else {               // (2+1) D system
     idq = 0;
-    for (int i=nxlo; i<=nxhi; i++){
+    for (int i = nxlo; i <= nxhi; ++i){
       qx = (i <= int((nx)/2)) ? (2.0*M_PI*(i)/nx) : (2.0*M_PI*(i-nx)/nx);
       for (int j=0; j<ny; j++){
         qy = (j <= int((ny)/2)) ? (2.0*M_PI*(j)/ny) : (2.0*M_PI*(j-ny)/ny);
 
         Phi_analytic_3D(qx, qy, G_q);
         int ndim = 0;
-        for (int idim=0; idim<sysdim; idim++){
-          for (int jdim=0; jdim<sysdim; jdim++) Phi_q[idq][ndim++] = G_q[idim][jdim];
-        }
-        idq++;
+        for (int idim = 0; idim < sysdim; ++idim)
+        for (int jdim = 0; jdim < sysdim; ++jdim) Phi_q[idq][ndim++] = G_q[idim][jdim];
+        ++idq;
       }
     }
   } // end of if (sysdim ==
   memory->destroy(G_q);
 
-  return;
+return;
 }
-
 
 /* ----------------------------------------------------------------------
  * private method, to get the analytic elastic stiffness coefficients
  * for 1+1 dimentional system.
  * --------------------------------------------------------------------*/
-
 void FixGFMD::Phi_analytic_2D(double qx, std::complex<double>** Gq)
 {
   if (qx == 0) qx = 1.e-6;
@@ -628,7 +603,7 @@ void FixGFMD::Phi_analytic_2D(double qx, std::complex<double>** Gq)
                              *(  (3.0 + cx)/( 2.0*sqrt(3.0)+sqrt((5.0+cx)*(3.0-cx)) ) ) ) * 1.0/D), 0.0);
   GaussJordan(sysdim,Gq[0]);
 
-  return;
+return;
 }
 
 /* ----------------------------------------------------------------------
@@ -708,7 +683,7 @@ void FixGFMD::Phi_analytic_3D(double qx, double qy, std::complex<double>** Gq )
 
   GaussJordan(sysdim,Gq[0]);
 
-  return;
+return;
 }
 
 /* ----------------------------------------------------------------------
@@ -716,7 +691,6 @@ void FixGFMD::Phi_analytic_3D(double qx, double qy, std::complex<double>** Gq )
  * layer; usually used when you restart from previous run so as to 
  * correctly evaluate the dispacement
  * --------------------------------------------------------------------*/
-
 void FixGFMD::readxorg()
 {
   int info = 0, indx;
@@ -733,13 +707,13 @@ void FixGFMD::readxorg()
   }
   
   xcur[2] = 0.;
-  for (int i=0; i<nGFatoms; i++){
+  for (int i = 0; i < nGFatoms; ++i){
     if (fgets(strtmp,MAXLINE,fp) == NULL){info = 1; break;}
     if (sysdim == 2) sscanf(strtmp,"%d %d %lg %lg", &indx, &itag, &xcur[0], &xcur[1]);
     else sscanf(strtmp,"%d %d %lg %lg %lg", &indx, &itag, &xcur[0], &xcur[1], &xcur[2]);
      
-    if (itag<1 || itag>static_cast<int>(atom->natoms)) {info = 2; break;} // 1 <= itag <= natoms
-    for (int idim=0; idim<sysdim; idim++) UIrAll[i][idim] = xcur[idim];
+    if (itag < 1 || itag > static_cast<int>(atom->natoms)) {info = 2; break;} // 1 <= itag <= natoms
+    for (int idim = 0; idim < sysdim; ++idim) UIrAll[i][idim] = xcur[idim];
     UIrAll[i][sysdim] = itag;
   }
   fclose(fp);
@@ -751,7 +725,7 @@ void FixGFMD::readxorg()
   }
   if (me == 0) fprintf(gfmdlog, "\nOriginal positions of GF atoms are read from file: %s\n", file_xorg);
 
-  return;
+return;
 }
 
 /* ----------------------------------------------------------------------
@@ -761,7 +735,6 @@ void FixGFMD::readxorg()
  * corresponds to the equilibrium position, one should provide the 
  * informaiton by file, instead.
  * --------------------------------------------------------------------*/
-
 void FixGFMD::compxorg()
 {
   double **x = atom->x;
@@ -774,7 +747,7 @@ void FixGFMD::compxorg()
   int i, idim;
 
   nfind = 0;
-  for (i=0; i<nlocal; i++){
+  for (i = 0; i < nlocal; ++i){
     if (mask[i] & groupbit){
       domain->unmap(x[i], image[i], xcur);
 
@@ -786,13 +759,13 @@ void FixGFMD::compxorg()
 
   displs[0] = 0;
   MPI_Allgather(&nfind, 1, MPI_INT,recvcnts,1,MPI_INT,world);
-  for (i=1; i<nprocs; i++) displs[i] = displs[i-1] + recvcnts[i-1];
+  for (i = 1; i < nprocs; ++i) displs[i] = displs[i-1] + recvcnts[i-1];
 
   MPI_Allgatherv(UIrLoc[0],nfind,MPI_DOUBLE,UIrAll[0],recvcnts,displs,MPI_DOUBLE,world);
 
   if (me == 0) fprintf(gfmdlog,"\nOriginal positions of GF atoms determined from initial configuraiton!\n");
 
-  return;
+return;
 }
 
 /* ----------------------------------------------------------------------
@@ -813,12 +786,15 @@ void FixGFMD::readmap()
     error->one(FLERR,str);
   }
 
+  // first line carries nx,ny and nucell; for (1+1)D system, ny = 1
   if (fgets(strtmp,MAXLINE,fp) == NULL){
     char str[MAXLINE];
     sprintf(str,"Error %d while reading header info from file: %s",info,mapfile);
     error->one(FLERR,str);
   }
-  sscanf(strtmp,"%d %d %d", &nx, &ny, &nucell); // first line carries nx,ny and nucell; for (1+1)D system, ny = 1
+  nx = atoi(strtok(strtmp, " \n\t\r\f"));
+  ny = atoi(strtok(NULL,   " \n\t\r\f"));
+  nucell = atoi(strtok(NULL,   " \n\t\r\f"));
   if (nx*ny*nucell != nGFatoms) error->all(FLERR,"Number of atoms from FFT mesh and group mismatch");
 
   if (fgets(strtmp,MAXLINE,fp) == NULL){ // second line of mapfile is comment
@@ -828,11 +804,15 @@ void FixGFMD::readmap()
   }
 
   int ix, iy, iu;
-  for (int i=0; i<nGFatoms; i++){
+  for (int i = 0; i < nGFatoms; ++i){
     if (fgets(strtmp,MAXLINE,fp) == NULL){info = 1; break;}
-    sscanf(strtmp,"%d %d %d %d", &ix, &iy, &iu, &itag);
-    if (ix<0 || ix>=nx || iy<0 || iy>=ny || iu<0 || iu>=nucell) {info = 2; break;} // check if index is in correct range
-    if (itag<1 || itag>static_cast<int>(atom->natoms)) {info = 3; break;}      // 1 <= itag <= natoms
+    ix = atoi(strtok(strtmp, " \n\t\r\f"));
+    iy = atoi(strtok(NULL,   " \n\t\r\f"));
+    iu = atoi(strtok(NULL,   " \n\t\r\f"));
+    itag = atoi(strtok(NULL,   " \n\t\r\f"));
+    // check if index is in correct range
+    if (ix < 0 || ix >= nx || iy < 0 || iy >= ny || iu < 0 || iu >= nucell) {info = 2; break;} // check if index is in correct range
+    if (itag < 1 || itag > static_cast<int>(atom->natoms)) {info = 3; break;}      // 1 <= itag <= natoms
     idx = (ix*ny+iy)*nucell + iu;
     tag2surf[itag] = idx;
     surf2tag[idx]  = itag;
@@ -861,7 +841,7 @@ void FixGFMD::readmap()
   origin_tag = surf2tag[0];
   if (me == 0) fprintf(gfmdlog,"\nMapping info read from file  : %s\n\n", mapfile);
 
-  return;
+return;
 }
 
 /* ----------------------------------------------------------------------
@@ -897,7 +877,7 @@ void FixGFMD::compmap(int flag)
     error->all(FLERR,"Surface vector V must point to the +y direction");
 
   double invSurfV[2][2];
-  for (int i=0; i<2; i++){ invSurfV[i][0] = surfvec[i][0]; invSurfV[i][1] = surfvec[i][1];}
+  for (int i = 0; i < 2; ++i){ invSurfV[i][0] = surfvec[i][0]; invSurfV[i][1] = surfvec[i][1];}
 
   // get the inverse transpose of surfvec
   GaussJordan(2,invSurfV[0]);
@@ -908,8 +888,7 @@ void FixGFMD::compmap(int flag)
   // get FFT dimensions
   nx = int(domain->xprd*invSurfV[0][0]+0.1);
   ny = (sysdim == 2)?1:int(domain->yprd*invSurfV[1][1]+0.1);
-  if (nx<1 || nx>nGFatoms || ny<1 || ny>nGFatoms)
-    error->all(FLERR,"Error encountered while getting FFT dimensions");
+  if (nx < 1 || nx > nGFatoms || ny < 1 || ny > nGFatoms) error->all(FLERR,"Error encountered while getting FFT dimensions");
 
   nucell = nGFatoms / (nx*ny);
   if (nucell > 2) error->all(FLERR,"Mapping info cannot be computed for nucell > 2");
@@ -919,7 +898,7 @@ void FixGFMD::compmap(int flag)
 
   if (origin_tag > 0){
     nfind = 0;
-    for (int i=0; i<nGFatoms; i++){
+    for (int i = 0; i < nGFatoms; ++i){
       if (static_cast<int>(UIrAll[i][sysdim]) == origin_tag){
         SurfOrigin[0] = UIrAll[i][0];
         SurfOrigin[1] = UIrAll[i][1];
@@ -928,13 +907,14 @@ void FixGFMD::compmap(int flag)
       }
     }
     if (nfind < 1) error->all(FLERR,"Surface origin given by user not found");
-  }else{
+
+  } else {
     SurfOrigin[0] = UIrAll[0][0];
     SurfOrigin[1] = UIrAll[0][1];
   }
 
   // now to calculate the mapping info
-  for (int i=0; i<nGFatoms; i++) {
+  for (int i = 0; i < nGFatoms; ++i) {
     vx[0] = UIrAll[i][0]-SurfOrigin[0]; // relative coordination on the surface of atom i
     vx[1] = UIrAll[i][1]-SurfOrigin[1];
 
@@ -968,7 +948,7 @@ void FixGFMD::compmap(int flag)
   origin_tag = surf2tag[0];
   if (me == 0) fprintf(gfmdlog,"\nMapping info computed from initial configuration.\n");
 
-  return;
+return;
 }
 
 /* ----------------------------------------------------------------------
@@ -976,7 +956,6 @@ void FixGFMD::compmap(int flag)
  * Interpolation is done with bilinear for elements near the boundary
  * and bicubic elsewhere. 
  * --------------------------------------------------------------------*/
-
 void FixGFMD::readphi()
 {
   int  Nx, Ny, Nucell, idim, ndim;
@@ -1045,19 +1024,20 @@ void FixGFMD::readphi()
 
     if (nxlo==0 && mynq>0) Phi_q0_ASR(Phi_q[0]);
 
-  }else{ // Dimension from GFC run and current mismatch, interpolation needed!
+  } else { // Dimension from GFC run and current mismatch, interpolation needed!
+
     std::complex<double> **Phi_in;  // read in Phi_q from file
     memory->create(Phi_in,Nx*Ny, fft_dim2, "fix_gfmd:Phi_in");
     idq = 0;
-    for (int i=0; i<Nx; i++){
-      for (int j=0; j<Ny; j++){
-        for (idim=0; idim<fft_dim2; idim++){
-          nread = fread(&Phi_in[idq][idim], sizeof(std::complex<double>), 1, gfc_in);
-          if (nread != 1) error->one(FLERR,"Error while reading Phi from binary file");
-        }
-        idq++;
+    for (int i = 0; i < Nx; ++i)
+    for (int j = 0; j < Ny; ++j){
+      for (idim = 0; idim < fft_dim2; ++idim){
+        nread = fread(&Phi_in[idq][idim], sizeof(std::complex<double>), 1, gfc_in);
+        if (nread != 1) error->one(FLERR,"Error while reading Phi from binary file");
       }
+      ++idq;
     }
+
     Phi_q0_ASR(Phi_in[0]);
 
     /* Now to interpolate the Phi_q we need!
@@ -1073,91 +1053,90 @@ void FixGFMD::readphi()
     dx1 = double(Nx)/2.;
     dx2 = double(Ny)/2.;
     
-    for (idim=0; idim<fft_dim2; idim++){
+    for (idim = 0; idim < fft_dim2; ++idim){
       // get the gradients by finite element method
-      for (Ix=0; Ix<=Nx; Ix++){
-        for (Iy=0; Iy<=Ny; Iy++){
-          
-          int Cx = Ix%Nx, Cy = Iy%Ny;
+      for (Ix = 0; Ix <= Nx; ++Ix)
+      for (Iy = 0; Iy <= Ny; ++Iy){
+        int Cx = Ix%Nx, Cy = Iy%Ny;
 
-          xP1 = (Cx+1)%Nx;
-          xM1 = (Nx+Cx-1)%Nx;
-          yP1 = (Cy+1)%Ny;
-          yM1 = (Ny+Cy-1)%Ny;
-          ppx = pmx = xP1;
-          ppy = mpy = yP1;
-          mpx = mmx = xM1;
-          pmy = mmy = yM1;
-          facx = 1.;
-          facy = 1.;
-         
-          if (Ix == 0){
-            xM1  = Cx;
-            facx = 2.;
-            mpx  = mmx = Cx;
-            mpy  = mmy = Cy;
-          } else if (Ix == Nx){
-            xP1  = Cx;
-            facx = 2.;
-            ppx = pmx = Cx;
-            ppy = pmy = Cy;
-          }
+        xP1 = (Cx+1)%Nx;
+        xM1 = (Nx+Cx-1)%Nx;
+        yP1 = (Cy+1)%Ny;
+        yM1 = (Ny+Cy-1)%Ny;
+        ppx = pmx = xP1;
+        ppy = mpy = yP1;
+        mpx = mmx = xM1;
+        pmy = mmy = yM1;
+        facx = 1.;
+        facy = 1.;
+       
+        if (Ix == 0){
+          xM1  = Cx;
+          facx = 2.;
+          mpx  = mmx = Cx;
+          mpy  = mmy = Cy;
 
-          if (Iy == 0){
-            yM1  = Cy;
-            facy = 2.;
-            pmx  = mmx = Cx;
-            pmy  = mmy = Cy;
-          } else if (Iy == Ny){
-            yP1  = Cy;
-            facy = 2.;
-            ppx  = mpx = Cx;
-            ppy  = mpy = Cy;
-          }
-
-          Idx = Ix * (Ny+1) + Iy;
-          Phi_p1 [Idx] = (Phi_in[xP1*Ny+Cy ][idim] - Phi_in[xM1*Ny+Cy][idim]) * dx1 * facx;
-          Phi_p2 [Idx] = (Phi_in[Cx*Ny+yP1 ][idim] - Phi_in[Cx*Ny+yM1][idim]) * dx2 * facy;
-          Phi_p12[Idx] = (Phi_in[ppx*Ny+ppy][idim] - Phi_in[pmx*Ny+pmy][idim]
-                       -  Phi_in[mpx*Ny+mpy][idim] + Phi_in[mmx*Ny+mmy][idim]) * dx1 * dx2 * facx * facy;
+        } else if (Ix == Nx){
+          xP1  = Cx;
+          facx = 2.;
+          ppx = pmx = Cx;
+          ppy = pmy = Cy;
         }
+
+        if (Iy == 0){
+          yM1  = Cy;
+          facy = 2.;
+          pmx  = mmx = Cx;
+          pmy  = mmy = Cy;
+
+        } else if (Iy == Ny){
+          yP1  = Cy;
+          facy = 2.;
+          ppx  = mpx = Cx;
+          ppy  = mpy = Cy;
+        }
+
+        Idx = Ix * (Ny+1) + Iy;
+        Phi_p1 [Idx] = (Phi_in[xP1*Ny+Cy ][idim] - Phi_in[xM1*Ny+Cy][idim]) * dx1 * facx;
+        Phi_p2 [Idx] = (Phi_in[Cx*Ny+yP1 ][idim] - Phi_in[Cx*Ny+yM1][idim]) * dx2 * facy;
+        Phi_p12[Idx] = (Phi_in[ppx*Ny+ppy][idim] - Phi_in[pmx*Ny+pmy][idim]
+                     -  Phi_in[mpx*Ny+mpy][idim] + Phi_in[mmx*Ny+mmy][idim]) * dx1 * dx2 * facx * facy;
       }
 
       // to do interpolation
       idq = 0;
-      for (ix=nxlo; ix<=nxhi; ix++){
-        for (iy=0; iy<ny; iy++){
-          Ix = (int)(double(ix)/double(nx)*Nx);
-          Iy = (int)(double(iy)/double(ny)*Ny);
-          xP1 = (Ix+1)%Nx;
-          yP1 = (Iy+1)%Ny;
+      for (ix = nxlo; ix <= nxhi; ++ix)
+      for (iy = 0; iy < ny; ++iy){
+        Ix = (int)(double(ix)/double(nx)*Nx);
+        Iy = (int)(double(iy)/double(ny)*Ny);
+        xP1 = (Ix+1)%Nx;
+        yP1 = (Iy+1)%Ny;
 
-          y[0] = Phi_in[Ix*Ny+Iy][idim];
-          y[1] = Phi_in[xP1*Ny+Iy][idim];
-          y[2] = Phi_in[xP1*Ny+yP1][idim];
-          y[3] = Phi_in[Ix*Ny+yP1][idim];
+        y[0] = Phi_in[Ix*Ny+Iy][idim];
+        y[1] = Phi_in[xP1*Ny+Iy][idim];
+        y[2] = Phi_in[xP1*Ny+yP1][idim];
+        y[3] = Phi_in[Ix*Ny+yP1][idim];
 
-          xP1   = Ix+1;
-          yP1   = Iy+1;
-          y1[0] = Phi_p1[Ix *(Ny+1)+Iy ];
-          y1[1] = Phi_p1[xP1*(Ny+1)+Iy ];
-          y1[2] = Phi_p1[xP1*(Ny+1)+yP1];
-          y1[3] = Phi_p1[Ix *(Ny+1)+yP1];
+        xP1   = Ix+1;
+        yP1   = Iy+1;
+        y1[0] = Phi_p1[Ix *(Ny+1)+Iy ];
+        y1[1] = Phi_p1[xP1*(Ny+1)+Iy ];
+        y1[2] = Phi_p1[xP1*(Ny+1)+yP1];
+        y1[3] = Phi_p1[Ix *(Ny+1)+yP1];
 
-          y2[0] = Phi_p2[Ix *(Ny+1)+Iy];
-          y2[1] = Phi_p2[xP1*(Ny+1)+Iy];
-          y2[2] = Phi_p2[xP1*(Ny+1)+yP1];
-          y2[3] = Phi_p2[Ix *(Ny+1)+yP1];
+        y2[0] = Phi_p2[Ix *(Ny+1)+Iy];
+        y2[1] = Phi_p2[xP1*(Ny+1)+Iy];
+        y2[2] = Phi_p2[xP1*(Ny+1)+yP1];
+        y2[3] = Phi_p2[Ix *(Ny+1)+yP1];
 
-          y12[0] = Phi_p12[Ix *(Ny+1)+Iy];
-          y12[1] = Phi_p12[xP1*(Ny+1)+Iy];
-          y12[2] = Phi_p12[xP1*(Ny+1)+yP1];
-          y12[3] = Phi_p12[Ix *(Ny+1)+yP1];
+        y12[0] = Phi_p12[Ix *(Ny+1)+Iy];
+        y12[1] = Phi_p12[xP1*(Ny+1)+Iy];
+        y12[2] = Phi_p12[xP1*(Ny+1)+yP1];
+        y12[3] = Phi_p12[Ix *(Ny+1)+yP1];
 
-          bicuint(y, y1, y2, y12, double(Ix)/Nx, double(Ix+1)/Nx, double(Iy)/Ny,
-                  double(Iy+1)/Ny, double(ix)/nx, double(iy)/ny, &Phi_q[idq][idim]);
-          idq++;
-        }
+        bicuint(y, y1, y2, y12, double(Ix)/Nx, double(Ix+1)/Nx, double(Iy)/Ny,
+                double(Iy+1)/Ny, double(ix)/nx, double(iy)/ny, &Phi_q[idq][idim]);
+        idq++;
       } // end of interpolation on current idim
     } // end of for (idim ...
      
@@ -1185,32 +1164,28 @@ void FixGFMD::readphi()
 
   // unit conversion for the elastic stiffness coefficients
   if (old2new != 1.){
-    for (idq=0; idq<mynq; idq++){
-      for (idim=0; idim<fft_dim2; idim++) Phi_q[idq][idim] *= old2new;
-    }
+    for (idq = 0; idq < mynq; ++idq)
+    for (idim = 0; idim < fft_dim2; ++idim) Phi_q[idq][idim] *= old2new;
   }
 
   // compare equilibrium surface lattice based on gfc measurement and this run
   if (me == 0 && info_read){
     double sb_eq[fft_dim],d2o[sysdim];
-    for (idim=0; idim<fft_dim; idim++) sb_eq[idim] = 0.;
-    for (int ix=0; ix<nx; ix++){
-      for (int iy=0; iy<ny; iy++){
-        int idx = (ix*ny+iy)*nucell;
-        for (int iu=1; iu<nucell; iu++){
-          for (idim=0; idim<sysdim; idim++) d2o[idim] = xeq[idx+iu][idim] - xeq[idx][idim];
-          domain->minimum_image(d2o);
-          ndim = iu*sysdim;
-          for (idim=0; idim<sysdim; idim++) sb_eq[ndim+idim] += d2o[idim];
-        }
+    for (idim = 0; idim < fft_dim; ++idim) sb_eq[idim] = 0.;
+    for (int ix = 0; ix < nx; ++ix)
+    for (int iy = 0; iy < ny; ++iy){
+      int idx = (ix*ny+iy)*nucell;
+      for (int iu = 1; iu < nucell; ++iu){
+        for (idim = 0; idim < sysdim; ++idim) d2o[idim] = xeq[idx+iu][idim] - xeq[idx][idim];
+        domain->minimum_image(d2o);
+        ndim = iu*sysdim;
+        for (idim = 0; idim < sysdim; ++idim) sb_eq[ndim+idim] += d2o[idim];
       }
     }
-    for (idim=sysdim; idim<fft_dim; idim++) sb_eq[idim] /= nx*ny;
+    for (idim = sysdim; idim < fft_dim; ++idim) sb_eq[idim] /= nx*ny;
 
-    fprintf(gfmdlog,"\nSurface vector from this run: [%lg %lg], [%lg %lg]\n",
-      surfvec[0][0], surfvec[0][1], surfvec[1][0], surfvec[1][1]);
-    fprintf(gfmdlog,"Surface vector from gfc  run: [%lg %lg], [%lg %lg]\n",
-      svec_gfc[0][0], svec_gfc[0][1], svec_gfc[1][0], svec_gfc[1][1]);
+    fprintf(gfmdlog,"\nSurface vector from this run: [%lg %lg], [%lg %lg]\n", surfvec[0][0], surfvec[0][1], surfvec[1][0], surfvec[1][1]);
+    fprintf(gfmdlog,"Surface vector from gfc  run: [%lg %lg], [%lg %lg]\n", svec_gfc[0][0], svec_gfc[0][1], svec_gfc[1][0], svec_gfc[1][1]);
     fprintf(gfmdlog,"Surface basis  from this run: ");
     for (idim=0; idim<fft_dim; idim++) fprintf(gfmdlog,"%lg ",sb_eq[idim]);
     fprintf(gfmdlog,"\nSurface basis  from gfc  run: ");
@@ -1231,25 +1206,24 @@ void FixGFMD::readphi()
     }
     xs[0] = sqrt(lx2now/lx2gfc); xs[1] = sqrt(ly2now/ly2gfc);
     xs[2] = sqrt((lx2now+ly2now)/(lx2gfc+ly2gfc));
-    for (idim=0; idim<fft_dim; idim++) sb_gfc[idim] *= xs[idim%sysdim];
+    for (idim = 0; idim < fft_dim; ++idim) sb_gfc[idim] *= xs[idim%sysdim];
 
-    idx=0;
-    for (int ix=0; ix<nx; ix++){
-      for (int iy=0; iy<ny; iy++){
-        ndim = 0;
-        for (int iu=0; iu<nucell; iu++){
-          if (reset_xeq == 3) xeq[idx][0] = double(ix)*svec_gfc[0][0]+double(iy)*svec_gfc[1][0]+sb_gfc[ndim];
-          if (reset_xeq == 3 || sysdim == 2) xeq[idx][1] = double(iy)*svec_gfc[1][1]+sb_gfc[ndim+1];
-          if (sysdim == 3) xeq[idx][2] = sb_gfc[ndim+2];
-          idx++;
-          ndim += sysdim;
-        }
+    idx = 0;
+    for (int ix = 0; ix < nx; ++ix)
+    for (int iy = 0; iy < ny; ++iy){
+      ndim = 0;
+      for (int iu = 0; iu < nucell; ++iu){
+        if (reset_xeq == 3) xeq[idx][0] = double(ix)*svec_gfc[0][0]+double(iy)*svec_gfc[1][0]+sb_gfc[ndim];
+        if (reset_xeq == 3 || sysdim == 2) xeq[idx][1] = double(iy)*svec_gfc[1][1]+sb_gfc[ndim+1];
+        if (sysdim == 3) xeq[idx][2] = sb_gfc[ndim+2];
+        ++idx;
+        ndim += sysdim;
       }
     }
     if (me == 0) fprintf(gfmdlog,"\nEquilibrium positions reset based on surface lattice info from: %s\n",file_phi);
   }
 
-  return;
+return;
 }
 
 /* ----------------------------------------------------------------------
@@ -1273,19 +1247,19 @@ void FixGFMD::bcucof(std::complex<double> *y, std::complex<double> *y1, std::com
     4,-4,4,-4,2,2,-2,-2,2,-2,-2,2,1,1,1,1};
   /*-------------------------------------------------------------------*/
   d1d2 = d1 * d2;
-  for (i=0; i<4; i++){
+  for (i = 0; i < 4; ++i){
     x[i]   = y[i];
     x[i+4] = y1[i] * d1;
     x[i+8] = y2[i] * d2;
     x[i+12]= y12[i]* d1d2;
   }
-  for (i=0; i<16; i++){
+  for (i = 0; i < 16; ++i){
     xx = 0.;
-    for (j=0; j<16; j++) xx += wt[i][j] * x[j];
+    for (j = 0; j < 16; ++j) xx += wt[i][j] * x[j];
     c[i] = xx;
   }
 
-  return;
+return;
 }
 
 /* ----------------------------------------------------------------------
@@ -1306,9 +1280,9 @@ void FixGFMD::bicuint(std::complex<double> *y, std::complex<double> *y1, std::co
   u = (x2-x2l)/(x2u-x2l);
 
   *ansy = 0.;
-  for (i=3; i>=0; i--) *ansy = t * (*ansy) + (c[i][3]*u+c[i][2]*u+c[i][1])*u + c[i][0];
+  for (i = 3; i >= 0; --i) *ansy = t * (*ansy) + (c[i][3]*u+c[i][2]*u+c[i][1])*u + c[i][0];
 
-  return;
+return;
 }
 
 /* ----------------------------------------------------------------------
@@ -1319,18 +1293,18 @@ void FixGFMD::Phi_q0_ASR(std::complex<double> * Phi_q0)
 {
   if (nasr < 1) return;
 
-  for (int iit=0; iit<nasr; iit++){
+  for (int iit = 0; iit < nasr; ++iit){
     // simple ASR; the resultant matrix might not be symmetric
-    for (int a=0; a<sysdim; a++)
-    for (int b=0; b<sysdim; b++){
-      for (int k=0; k<nucell; k++){
+    for (int a = 0; a < sysdim; ++a)
+    for (int b = 0; b < sysdim; ++b){
+      for (int k = 0; k < nucell; ++k){
         double sum = 0.;
-        for (int kp=0; kp<nucell; kp++){
+        for (int kp = 0; kp < nucell; ++kp){
           int idx = (k*sysdim+a)*fft_dim+kp*sysdim+b;
           sum += real(Phi_q0[idx]);
         }
         sum /= double(nucell);
-        for (int kp=0; kp<nucell; kp++){
+        for (int kp = 0; kp < nucell; ++kp){
           int idx = (k*sysdim+a)*fft_dim+kp*sysdim+b;
           real(Phi_q0[idx]) -= sum;
         }
@@ -1338,13 +1312,13 @@ void FixGFMD::Phi_q0_ASR(std::complex<double> * Phi_q0)
     }
    
     // symmetrize
-    for (int k=0; k<nucell; k++)
-    for (int kp=k; kp<nucell; kp++){
+    for (int k = 0; k < nucell; ++k)
+    for (int kp = k; kp < nucell; ++kp){
       double csum = 0.;
-      for (int a=0; a<sysdim; a++)
-      for (int b=0; b<sysdim; b++){
-        int idx = (k*sysdim+a)*fft_dim+kp*sysdim+b;
-        int jdx = (kp*sysdim+b)*fft_dim+k*sysdim+a;
+      for (int a = 0; a < sysdim; ++a)
+      for (int b = 0; b < sysdim; ++b){
+        int idx = (k*sysdim+a)*fft_dim + kp*sysdim + b;
+        int jdx = (kp*sysdim+b)*fft_dim + k*sysdim + a;
         csum = (real(Phi_q0[idx])+real(Phi_q0[jdx]))*0.5;
         real(Phi_q0[idx]) = real(Phi_q0[jdx]) = csum;
       }
@@ -1352,16 +1326,16 @@ void FixGFMD::Phi_q0_ASR(std::complex<double> * Phi_q0)
   }
 
   // symmetric ASR
-  for (int a=0; a<sysdim; a++)
-  for (int b=0; b<sysdim; b++){
-    for (int k=0; k<nucell; k++){
+  for (int a = 0; a < sysdim; ++a)
+  for (int b = 0; b < sysdim; ++b){
+    for (int k = 0; k < nucell; ++k){
       double sum = 0.;
-      for (int kp=0; kp<nucell; kp++){
-        int idx = (k*sysdim+a)*fft_dim+kp*sysdim+b;
+      for (int kp = 0; kp < nucell; ++kp){
+        int idx = (k*sysdim+a)*fft_dim + kp*sysdim + b;
         sum += real(Phi_q0[idx]);
       }
       sum /= double(nucell-k);
-      for (int kp=k; kp<nucell; kp++){
+      for (int kp = k; kp < nucell; ++kp){
         int idx = (k*sysdim+a)*fft_dim+kp*sysdim+b;
         int jdx = (kp*sysdim+b)*fft_dim+k*sysdim+a;
         real(Phi_q0[idx]) -= sum;
@@ -1370,13 +1344,12 @@ void FixGFMD::Phi_q0_ASR(std::complex<double> * Phi_q0)
     }
   }
 
-  return;
+return;
 }
 
 /* ----------------------------------------------------------------------
  * To output the elastic force, if keyword output is set.
  * --------------------------------------------------------------------*/
-
 void FixGFMD::end_of_step()
 {
   if (me == 0){
@@ -1387,24 +1360,23 @@ void FixGFMD::end_of_step()
     fp = fopen(file_for, "w");
 
     fprintf(fp,"# Elastic forces acting on GF layer, timestep= " BIGINT_FORMAT "\n",update->ntimestep);
-    fprintf(fp,"# Size Info: %lg %lg %lg %d %d\n", domain->xprd, domain->yprd,
-      domain->xy, nGFatoms, sysdim);
+    fprintf(fp,"# Size Info: %lg %lg %lg %d %d\n", domain->xprd, domain->yprd, domain->xy, nGFatoms, sysdim);
     fprintf(fp,"# Extra force added on each GF atom: %lg\n", load);
     if (sysdim == 3) fprintf(fp,"#index atom x y z fx fy fz\n");
     else fprintf(fp,"# index atom x y fx fy\n");
 
-    for (int i=0; i<nGFatoms; i++){
+    for (int i = 0; i < nGFatoms; ++i){
       idx  = static_cast<int>(UIrAll[i][sysdim]);
       itag = surf2tag[idx];
       fprintf(fp,"%d %d", idx, itag);
-      for (int idim=0;idim<sysdim;idim++) fprintf(fp," %lg", UIrAll[i][idim]);
-      for (int idim=0;idim<sysdim;idim++) fprintf(fp," %lg", FrAll[i][idim]);
+      for (int idim = 0; idim < sysdim; ++idim) fprintf(fp," %lg", UIrAll[i][idim]);
+      for (int idim = 0; idim < sysdim; ++idim) fprintf(fp," %lg", FrAll[i][idim]);
       fprintf(fp,"\n");
     }
     fclose(fp);
   }
 
-  return;
+return;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1417,7 +1389,7 @@ double FixGFMD::memory_usage()
                + sizeof(std::map<int,int>) * 2 * nGFatoms
                + sizeof(std::complex<double>) * MAX(1,mynq) * fft_dim * (1+fft_dim)
                + sizeof(double) * 2 * mynq;
-  return bytes;
+return bytes;
 }
 
 /* ----------------------------------------------------------------------
@@ -1426,11 +1398,13 @@ double FixGFMD::memory_usage()
  * --------------------------------------------------------------------*/
 void FixGFMD::MatMulVec(int dim, double *Mat, double *Vin, double *Vout)
 {
-  int m=0;
-  for (int i=0; i<dim; i++){
+  int m = 0;
+  for (int i = 0; i < dim; ++i){
     Vout[i] = 0.;
-    for (int j=0; j<dim; j++) Vout[i] += Mat[m++]*Vin[j];
+    for (int j = 0; j < dim; ++j) Vout[i] += Mat[m++]*Vin[j];
   }
+
+return;
 }
 
 /* ----------------------------------------------------------------------
@@ -1440,11 +1414,13 @@ void FixGFMD::MatMulVec(int dim, double *Mat, double *Vin, double *Vout)
 void FixGFMD::MatMulVec(int dim, std::complex<double> *Mat,
               std::complex<double> *Vin, std::complex<double> *Vout)
 {
-  int m=0;
-  for (int i=0; i<dim; i++){
+  int m = 0;
+  for (int i = 0; i < dim; ++i){
     Vout[i] = std::complex<double>(0.,0.);
-    for (int j=0; j<dim; j++) Vout[i] += Mat[m++]*Vin[j];
+    for (int j = 0; j < dim; ++j) Vout[i] += Mat[m++]*Vin[j];
   }
+
+return;
 }
 
 /* ----------------------------------------------------------------------
@@ -1453,16 +1429,18 @@ void FixGFMD::MatMulVec(int dim, std::complex<double> *Mat,
  * --------------------------------------------------------------------*/
 void FixGFMD::MatMulMat(int dim, double *MatA, double *MatB, double *MatC)
 {
-  int m=0;
-  int idim=0;
-  for (int i=0; i<dim; i++){
-    for (int j=0; j<dim; j++){
+  int m = 0;
+  int idim = 0;
+  for (int i = 0; i < dim; ++i){
+    for (int j=0; j < dim; ++j){
       MatC[m] =0.;
-      for (int k=0; k<dim; k++) MatC[m] += MatA[idim+k]*MatB[k*dim+j];
-      m++;
+      for (int k = 0; k < dim; ++k) MatC[m] += MatA[idim+k]*MatB[k*dim+j];
+      ++m;
     }
     idim += dim;
   }
+
+return;
 }
 
 /* ----------------------------------------------------------------------
@@ -1472,16 +1450,18 @@ void FixGFMD::MatMulMat(int dim, double *MatA, double *MatB, double *MatC)
 void FixGFMD::MatMulMat(int dim, std::complex<double> *MatA,
               std::complex<double> *MatB, std::complex<double> *MatC)
 {
-  int m=0;
-  int idim=0;
-  for (int i=0; i<dim; i++){
-    for (int j=0; j<dim; j++){
+  int m = 0;
+  int idim = 0;
+  for (int i = 0; i < dim; ++i){
+    for (int j = 0; j < dim; ++j){
       MatC[m] =std::complex<double>(0.,0.);
-      for (int k=0; k<dim; k++) MatC[m] += MatA[idim+k]*MatB[k*dim+j];
-      m++;
+      for (int k = 0; k < dim; ++k) MatC[m] += MatA[idim+k]*MatB[k*dim+j];
+      ++m;
     }
     idim += dim;
   }
+
+return;
 }
 
 /* ----------------------------------------------------------------------
@@ -1500,12 +1480,12 @@ void FixGFMD::GaussJordan(int n, double *Mat)
   indxr = new int[n];
   ipiv  = new int[n];
 
-  for (i=0; i<n; i++) ipiv[i] = 0;
-  for (i=0; i<n; i++){
+  for (i = 0; i < n; ++i) ipiv[i] = 0;
+  for (i = 0; i < n; ++i){
     big = 0.;
-    for (j=0; j<n; j++){
+    for (j = 0; j < n; ++j){
       if (ipiv[j] != 1){
-        for (k=0; k<n; k++){
+        for (k = 0; k < n; ++k){
           if (ipiv[k] == 0){
             idr = j*n+k;
             if (fabs(Mat[idr]) >= big){
@@ -1513,15 +1493,14 @@ void FixGFMD::GaussJordan(int n, double *Mat)
               irow = j;
               icol = k;
             }
-          }else if (ipiv[k] >1){
-            error->one(FLERR,"Singular matrix in double GaussJordan!");
-          }
+          } else if (ipiv[k] >1) error->one(FLERR,"Singular matrix in double GaussJordan!");
         }
       }
     }
+
     ipiv[icol] += 1;
     if (irow != icol){
-      for (l=0; l<n; l++){
+      for (l = 0; l < n; ++l){
         idr  = irow*n+l;
         idc  = icol*n+l;
         dum  = Mat[idr];
@@ -1531,28 +1510,28 @@ void FixGFMD::GaussJordan(int n, double *Mat)
     }
     indxr[i] = irow;
     indxc[i] = icol;
-    idr = icol*n+icol;
+    idr = icol*n + icol;
     if (Mat[idr] == 0.) error->one(FLERR,"Singular matrix in double GaussJordan!");
     
     pivinv = 1./ Mat[idr];
     Mat[idr] = 1.;
     idr = icol*n;
-    for (l=0; l<n; l++) Mat[idr+l] *= pivinv;
-    for (ll=0; ll<n; ll++){
+    for (l = 0; l < n; ++l) Mat[idr+l] *= pivinv;
+    for (ll = 0; ll < n; ++ll){
       if (ll != icol){
         idc = ll*n+icol;
         dum = Mat[idc];
         Mat[idc] = 0.;
         idc -= icol;
-        for (l=0; l<n; l++) Mat[idc+l] -= Mat[idr+l]*dum;
+        for (l = 0; l < n; ++l) Mat[idc+l] -= Mat[idr+l]*dum;
       }
     }
   }
-  for (l=n-1; l>=0; l--){
+  for (l = n-1; l >= 0; --l){
     int rl = indxr[l];
     int cl = indxc[l];
     if (rl != cl){
-      for (k=0; k<n; k++){
+      for (k = 0; k < n; ++k){
         idr = k*n+rl;
         idc = k*n+cl;
         dum = Mat[idr];
@@ -1565,7 +1544,7 @@ void FixGFMD::GaussJordan(int n, double *Mat)
   delete []indxc;
   delete []ipiv;
 
-  return;
+return;
 }
 
 /* ----------------------------------------------------------------------
@@ -1585,12 +1564,12 @@ void FixGFMD::GaussJordan(int n, std::complex<double> *Mat)
   indxr = new int[n];
   ipiv  = new int[n];
 
-  for (i=0; i<n; i++) ipiv[i] = 0;
-  for (i=0; i<n; i++){
+  for (i = 0; i < n; ++i) ipiv[i] = 0;
+  for (i = 0; i < n; ++i){
     big = 0.;
-    for (j=0; j<n; j++){
+    for (j = 0; j < n; ++j){
       if (ipiv[j] != 1){
-        for (k=0; k<n; k++){
+        for (k = 0; k < n; ++k){
           if (ipiv[k] == 0){
             idr = j*n+k;
             nmjk = norm(Mat[idr]);
@@ -1599,15 +1578,13 @@ void FixGFMD::GaussJordan(int n, std::complex<double> *Mat)
               irow = j;
               icol = k;
             }
-          }else if (ipiv[k]>1){
-            error->one(FLERR,"Singular matrix in complex GaussJordan!");
-          }
+          } else if (ipiv[k]>1) error->one(FLERR,"Singular matrix in complex GaussJordan!");
         }
       }
     }
     ipiv[icol] += 1;
     if (irow != icol){
-      for (l=0; l<n; l++){
+      for (l = 0; l < n; ++l){
         idr  = irow*n+l;
         idc  = icol*n+l;
         dum  = Mat[idr];
@@ -1623,22 +1600,22 @@ void FixGFMD::GaussJordan(int n, std::complex<double> *Mat)
     pivinv = 1./ Mat[idr];
     Mat[idr] = std::complex<double>(1.,0.);
     idr = icol*n;
-    for (l=0; l<n; l++) Mat[idr+l] *= pivinv;
-    for (ll=0; ll<n; ll++){
+    for (l = 0; l < n; ++l) Mat[idr+l] *= pivinv;
+    for (ll = 0; ll < n; ++ll){
       if (ll != icol){
         idc = ll*n+icol;
         dum = Mat[idc];
         Mat[idc] = 0.;
         idc -= icol;
-        for (l=0; l<n; l++) Mat[idc+l] -= Mat[idr+l]*dum;
+        for (l = 0; l < n; ++l) Mat[idc+l] -= Mat[idr+l]*dum;
       }
     }
   }
-  for (l=n-1; l>=0; l--){
+  for (l = n-1; l >= 0; --l){
     int rl = indxr[l];
     int cl = indxc[l];
     if (rl != cl){
-      for (k=0; k<n; k++){
+      for (k = 0; k < n; ++k){
         idr = k*n+rl;
         idc = k*n+cl;
         dum = Mat[idr];
@@ -1651,7 +1628,7 @@ void FixGFMD::GaussJordan(int n, std::complex<double> *Mat)
   delete []indxc;
   delete []ipiv;
 
-  return;
+return;
 }
 
 /* ---------------------------------------------------------------------- */
