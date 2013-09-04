@@ -140,11 +140,11 @@ FixGFC::FixGFC(LAMMPS *lmp,  int narg, char **arg) : Fix(lmp, narg, arg)
   // create FFT and allocate memory for FFT
   nxlo = 0;
   int *nx_loc = new int [nprocs];
-  for (int i=0; i<nprocs;i++){
+  for (int i = 0; i < nprocs; ++i){
     nx_loc[i] = nx/nprocs;
-    if (i < nx%nprocs) nx_loc[i]++;
+    if (i < nx%nprocs) ++nx_loc[i];
   }
-  for (int i=0; i<me; i++) nxlo += nx_loc[i];
+  for (int i = 0; i < me; ++i) nxlo += nx_loc[i];
   nxhi  = nxlo + nx_loc[me] - 1;
   mynpt = nx_loc[me] * ny;
   mynq  = mynpt;
@@ -156,8 +156,8 @@ FixGFC::FixGFC(LAMMPS *lmp,  int narg, char **arg) : Fix(lmp, narg, arg)
   fft_cnts  = new int[nprocs];
   fft_disp  = new int[nprocs];
   fft_disp[0] = 0;
-  for (int i=0; i<nprocs; i++) fft_cnts[i] = nx_loc[i]*ny*fft_dim;
-  for (int i=1; i<nprocs; i++) fft_disp[i] = fft_disp[i-1] + fft_cnts[i-1];
+  for (int i = 0; i < nprocs; ++i) fft_cnts[i] = nx_loc[i]*ny*fft_dim;
+  for (int i = 1; i < nprocs; ++i) fft_disp[i] = fft_disp[i-1] + fft_cnts[i-1];
   delete []nx_loc;
 
   fft   = new FFT3d(lmp,world,1,ny,nx,0,0,0,ny-1,nxlo,nxhi,0,0,0,ny-1,nxlo,nxhi,0,0,&mysize);
@@ -197,7 +197,7 @@ FixGFC::FixGFC(LAMMPS *lmp,  int narg, char **arg) : Fix(lmp, narg, arg)
       error->one(FLERR,str);
     }
 
-    for (int i=0; i<60; i++) fprintf(gfclog,"#"); fprintf(gfclog,"\n");
+    for (int i = 0; i < 60; ++i) fprintf(gfclog,"#"); fprintf(gfclog,"\n");
     fprintf(gfclog,"# group name of the Green's Function layer : %s\n", group->names[igroup]);
     fprintf(gfclog,"# total number of atoms in the GF layer    : %d\n", nGFatoms);
     fprintf(gfclog,"# dimension of the system                  : %d D\n", sysdim);
@@ -208,7 +208,7 @@ FixGFC::FixGFC(LAMMPS *lmp,  int narg, char **arg) : Fix(lmp, narg, arg)
     fprintf(gfclog,"# frequency of GFC measurement             : %d\n", nevery);
     fprintf(gfclog,"# output result after this many measurement: %d\n", nfreq);
     fprintf(gfclog,"# number of processors used by this run    : %d\n", nprocs);
-    for (int i=0; i<60; i++) fprintf(gfclog,"#"); fprintf(gfclog,"\n");
+    for (int i = 0; i < 60; ++i) fprintf(gfclog,"#"); fprintf(gfclog,"\n");
     fprintf(gfclog,"# Surface vectors: [ %lg, %lg ] [ %lg, %lg ]\n", surfvec[0][0],
       surfvec[0][1], surfvec[1][0], surfvec[1][1]);
 
@@ -217,14 +217,14 @@ FixGFC::FixGFC(LAMMPS *lmp,  int narg, char **arg) : Fix(lmp, narg, arg)
     fprintf(gfclog,"%d %d %d\n", nx, ny, nucell);
     fprintf(gfclog,"# l1 l2 k atom_id\n");
     int ix, iy, iu;
-    for (idx =0; idx<nGFatoms; idx++){
+    for (idx = 0; idx < nGFatoms; ++idx){
       itag = surf2tag[idx];
       iu   = idx%nucell;
       iy   = (idx/nucell)%ny;
       ix   = idx/(ny*nucell);
       fprintf(gfclog,"%d %d %d %d\n", ix, iy, iu, itag);
     }
-    for (int i=0; i<60; i++) fprintf(gfclog,"#"); fprintf(gfclog,"\n");
+    for (int i = 0; i < 60; ++i) fprintf(gfclog,"#"); fprintf(gfclog,"\n");
     fflush(gfclog);
   }
  
@@ -299,7 +299,7 @@ void FixGFC::init()
 {
   // warn if more than one gfc fix
   int count = 0;
-  for (int i=0;i<modify->nfix;i++) if (strcmp(modify->fix[i]->style,"gfc") == 0) count++;
+  for (int i = 0; i < modify->nfix; ++i) if (strcmp(modify->fix[i]->style,"gfc") == 0) ++count;
   if (count > 1 && me == 0) error->warning(FLERR,"More than one fix gfc defined"); // just warn, but allowed.
 }
 
@@ -308,19 +308,19 @@ void FixGFC::init()
 void FixGFC::setup(int flag)
 {
   // initialize accumulating variables
-  for (int i=0; i<sysdim; i++) TempSum[i] = 0.;
-  for (int i=0; i<mynpt; i++){
-    for (int j=0; j<fft_dim;  j++) Rsum[i][j] = 0.;
-  }
-  for (int i=0; i<mynq; i++){
-    for (int j=0; j<fft_dim2; j++) Rqsum[i][j] = std::complex<double> (0.,0.);
-  }
-  for (int i=0; i<nucell; i++){
-    for (int j=0; j<sysdim; j++) surfbasis[i][j] = 0.;
-  }
+  for (int i = 0; i < sysdim; ++i) TempSum[i] = 0.;
+
+  for (int i = 0; i < mynpt; ++i)
+  for (int j = 0; j < fft_dim; ++j) Rsum[i][j] = 0.;
+
+  for (int i = 0; i < mynq; ++i)
+  for (int j = 0; j < fft_dim2; ++j) Rqsum[i][j] = std::complex<double> (0.,0.);
+
+  for (int i = 0; i < nucell; ++i)
+  for (int j = 0; j < sysdim; ++j) surfbasis[i][j] = 0.;
+
   prev_nstep = update->ntimestep;
-  GFcounter  = 0;
-  ifreq      = 0;
+  GFcounter  = ifreq = 0;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -350,101 +350,73 @@ void FixGFC::end_of_step()
 
   // evaluate R(r) on local proc
   nfind = 0;
-  if (domain->triclinic == 0) { // for orthogonal lattice
-    for (i=0; i<nlocal; i++){
-      if (mask[i] & groupbit){
-        itag = tag[i];
-        idx  = tag2surf[itag];
-        
-        xbox = (image[i] & 1023) - 512;
-        ybox = (image[i] >> 10 & 1023) - 512;
-        zbox = (image[i] >> 20) - 512;
-        xcur[0] = x[i][0] + xprd*xbox;
-        xcur[1] = x[i][1] + yprd*ybox;
-        xcur[2] = x[i][2] + zprd*zbox;
-        for (idim=0; idim<sysdim; idim++) RIloc[nfind][idim] = xcur[idim];
-        RIloc[nfind++][sysdim] = idx;
-      }
-    }
-  }else{                      // for non-orthogonal lattice
-    for (i=0; i<nlocal; i++){
-      if (mask[i] & groupbit){
-        itag = tag[i];
-        idx  = tag2surf[itag];
+  for (i = 0; i < nlocal; ++i){
+    if (mask[i] & groupbit){
+      itag = tag[i];
+      idx  = tag2surf[itag];
 
-        xbox = (image[i] & 1023) - 512;
-        ybox = (image[i] >> 10 & 1023) - 512;
-        zbox = (image[i] >> 20) - 512;
-        xcur[0] = x[i][0] + h[0]*xbox + h[5]*ybox + h[4]*zbox;
-        xcur[1] = x[i][1] + h[1]*ybox + h[3]*zbox;
-        xcur[2] = x[i][2] + h[2]*zbox;
-        for (idim=0; idim<sysdim; idim++) RIloc[nfind][idim] = xcur[idim];
-        RIloc[nfind++][sysdim] = idx;
-      }
+      domain->unmap(x[i], image[i], xcur);
+        
+      for (idim = 0; idim < sysdim; ++idim) RIloc[nfind][idim] = xcur[idim];
+      RIloc[nfind++][sysdim] = double(idx);
     }
   }
 
   // gather R(r) on local proc, then sort and redistribute to all procs for FFT
   nfind *= (sysdim+1);
   displs[0] = 0;
-  for (i=0; i<nprocs;i++) recvcnts[i] = 0;
+  for (i = 0; i < nprocs; ++i) recvcnts[i] = 0;
   MPI_Gather(&nfind,1,MPI_INT,recvcnts,1,MPI_INT,0,world);
-  for (i=1; i<nprocs; i++) displs[i] = displs[i-1] + recvcnts[i-1];
+  for (i = 1; i < nprocs; ++i) displs[i] = displs[i-1] + recvcnts[i-1];
 
   MPI_Gatherv(RIloc[0],nfind,MPI_DOUBLE,RIall[0],recvcnts,displs,MPI_DOUBLE,0,world);
   if (me == 0){
-    for (i=0; i<nGFatoms; i++){
+    for (i = 0; i < nGFatoms; ++i){
       idx = static_cast<int>(RIall[i][sysdim]);
-      for (idim=0; idim<sysdim; idim++) Rsort[idx][idim] = RIall[i][idim];
+      for (idim = 0; idim < sysdim; ++idim) Rsort[idx][idim] = RIall[i][idim];
     }
   }
   MPI_Scatterv(Rsort[0],fft_cnts,fft_disp, MPI_DOUBLE, Rnow[0], fft_nsend, MPI_DOUBLE,0,world);
 
   // get Rsum
-  for (idx=0; idx<mynpt; idx++){
-    for (idim=0; idim<fft_dim; idim++){
-      Rsum[idx][idim] += Rnow[idx][idim];
-    }
-  }
+  for (idx = 0; idx < mynpt; ++idx)
+  for (idim = 0; idim < fft_dim; ++idim) Rsum[idx][idim] += Rnow[idx][idim];
 
   // FFT R(r) to get R(q)
-  for (idim=0; idim<fft_dim; idim++){
-    int m=0;
-    for (idx=0; idx<mynpt; idx++){
+  for (idim = 0; idim < fft_dim; ++idim){
+    int m = 0;
+    for (idx = 0; idx < mynpt; ++idx){
       fft_data[m++] = Rnow[idx][idim];
       fft_data[m++] = 0.;
     }
     fft->compute(fft_data, fft_data, -1);
     m = 0;
-    for (idq=0; idq<mynq; idq++){
+    for (idq = 0; idq < mynq; ++idq){
       Rqnow[idq][idim] = std::complex<double>(fft_data[m], fft_data[m+1]);
       m += 2;
     }
   }
   // to get sum(R(q).R(q)*)
-  for (idq=0; idq<mynq; idq++){
+  for (idq = 0; idq < mynq; ++idq){
     ndim = 0;
-    for (idim=0; idim<fft_dim; idim++){
-      for (jdim=0; jdim<fft_dim; jdim++){
-        Rqsum[idq][ndim++] += Rqnow[idq][idim]*conj(Rqnow[idq][jdim]);
-      }
-    }
+    for (idim = 0; idim < fft_dim; ++idim)
+    for (jdim = 0; jdim < fft_dim; ++jdim) Rqsum[idq][ndim++] += Rqnow[idq][idim]*conj(Rqnow[idq][jdim]);
   }
 
   // get surfbasis
   if (fft_dim > sysdim){
-    for (idx=0; idx<mynpt; idx++){
+    for (idx = 0; idx < mynpt; ++idx){
       ndim = sysdim;
-      for (i=1; i<nucell; i++){
-        for (idim=0; idim<sysdim; idim++) dist2orig[idim] = Rnow[idx][ndim++] - Rnow[idx][idim];
+      for (i = 1; i < nucell; ++i){
+        for (idim = 0; idim < sysdim; ++idim) dist2orig[idim] = Rnow[idx][ndim++] - Rnow[idx][idim];
         domain->minimum_image(dist2orig);
-        for (idim=0; idim<sysdim; idim++) surfbasis[i][idim] += dist2orig[idim];
+        for (idim = 0; idim < sysdim; ++idim) surfbasis[i][idim] += dist2orig[idim];
       }
     }
   }
 
   // increment counter
-  GFcounter++;
+  ++GFcounter;
 
   // compute and output Phi_q after every nfreq evaluations
   if (++ifreq == nfreq) postprocess();
@@ -505,29 +477,37 @@ void FixGFC::readmap()
     error->one(FLERR,str);
   }
 
-  if (fgets(strtmp,MAXLINE,fp) == NULL)
-    error->all(FLERR,"Error while reading header of mapping file!");
-  sscanf(strtmp,"%d %d %d", &nx, &ny, &nucell);
+  // first line: nx, ny, and nucell
+  if (fgets(strtmp,MAXLINE,fp) == NULL) error->all(FLERR,"Error while reading header of mapping file!");
+  nx = atoi(strtok(strtmp, " \n\t\r\f"));
+  ny = atoi(strtok(NULL,   " \n\t\r\f"));
+  nucell = atoi(strtok(NULL,   " \n\t\r\f"));
   if (nx*ny*nucell != nGFatoms) error->all(FLERR,"FFT mesh and number of atoms in group mismatch!");
   
-  if (fgets(strtmp,MAXLINE,fp) == NULL)    // second line of mapfile is comment
-    error->all(FLERR,"Error while reading comment of mapping file!");
+  // second line of mapfile is comment
+  if (fgets(strtmp,MAXLINE,fp) == NULL) error->all(FLERR,"Error while reading comment of mapping file!");
 
   int ix, iy, iu;
-  for (int i=0; i<nGFatoms; i++){
+  // the remaining lines carry the mapping info
+  for (int i = 0; i < nGFatoms; ++i){
     if (fgets(strtmp,MAXLINE,fp) == NULL) {info = 1; break;}
-    sscanf(strtmp,"%d %d %d %d", &ix, &iy, &iu, &itag); // the remaining lines carry the mapping info
+    ix = atoi(strtok(strtmp, " \n\t\r\f"));
+    iy = atoi(strtok(NULL,   " \n\t\r\f"));
+    iz = atoi(strtok(NULL,   " \n\t\r\f"));
+    itag = atoi(strtok(NULL,   " \n\t\r\f"));
 
-    if (ix<0 || ix>=nx || iy<0 || iy>=ny || iu<0 || iu>=nucell) {info = 2; break;} // check if index is in correct range
-    if (itag<1 || itag>static_cast<int>(atom->natoms)) {info = 3; break;}     // 1 <= itag <= natoms
-    idx = (ix*ny+iy)*nucell+iu;
+    // check if indices are in correct range
+    if (ix < 0 || ix >= nx || iy < 0 || iy >= ny || iu < 0 || iu >= nucell) {info = 2; break;}
+    // 1 <= itag <= natoms
+    if (itag < 1 || itag > static_cast<int>(atom->natoms)) {info = 3; break;}
+    idx = (ix*ny+iy)*nucell + iu;
     tag2surf[itag] = idx;
     surf2tag[idx]  = itag;
   }
   fclose(fp);
 
   if (tag2surf.size() != surf2tag.size() || tag2surf.size() != static_cast<std::size_t>(nGFatoms) )
-    error->all(FLERR,"The mapping is incomplete!");
+  error->all(FLERR,"The mapping is incomplete!");
   if (info) error->all(FLERR,"Error while reading mapping file!");
   
   // check the correctness of mapping
@@ -535,7 +515,7 @@ void FixGFC::readmap()
   int *tag   = atom->tag;
   int nlocal = atom->nlocal;
 
-  for (int i = 0; i < nlocal; i++) {
+  for (int i = 0; i < nlocal; ++i) {
     if (mask[i] & groupbit){
       itag = tag[i];
       idx  = tag2surf[itag];
@@ -544,7 +524,7 @@ void FixGFC::readmap()
   }
   origin_tag = surf2tag[0];
 
-  return;
+return;
 }
 
 /* ----------------------------------------------------------------------
@@ -568,15 +548,12 @@ void FixGFC::compmap(int flag)
     }
   }
   // check the validity of the surface vectors read from command line.
-  if (fabs(surfvec[0][1]) > 0.0 && fabs(surfvec[1][0]) > 0.0)
-    error->all(FLERR,"Either U or V must be on the box side!");
-  if (surfvec[0][0] <= 0.0)
-    error->all(FLERR,"Surface vector U must be along the +x direction!");
-  if (surfvec[1][1] <= 0.0)
-    error->all(FLERR,"Surface vector V must point to the +y direction!");
+  if (fabs(surfvec[0][1]) > 0.0 && fabs(surfvec[1][0]) > 0.0) error->all(FLERR,"Either U or V must be on the box side!");
+  if (surfvec[0][0] <= 0.0) error->all(FLERR,"Surface vector U must be along the +x direction!");
+  if (surfvec[1][1] <= 0.0) error->all(FLERR,"Surface vector V must point to the +y direction!");
   
   double invSurfV[2][2];
-  for (int i=0;i<2;i++){
+  for (int i = 0;i < 2; ++i){
     invSurfV[i][0] = surfvec[i][0];
     invSurfV[i][1] = surfvec[i][1];
   }
@@ -595,8 +572,7 @@ void FixGFC::compmap(int flag)
   nx = int(domain->xprd*invSurfV[0][0]+0.1);
   ny = (sysdim == 2)?1:int(domain->yprd*invSurfV[1][1]+0.1);
 
-  if (nx<1 || nx>nGFatoms || ny<1 || ny>nGFatoms)
-    error->all(FLERR,"Error encountered while getting FFT dimensions!");
+  if (nx < 1 || nx > nGFatoms || ny < 1 || ny > nGFatoms) error->all(FLERR,"Error encountered while getting FFT dimensions!");
 
   nucell = nGFatoms / (nx*ny);
   if (nucell > 2) error->all(FLERR,"Mapping info cannot be computed for nucell > 2!");
@@ -606,22 +582,22 @@ void FixGFC::compmap(int flag)
   // determining surface origin
   nfind =0;
   if ( origin_tag > 0 ){
-    for (int i=0; i<nlocal; i++){
+    for (int i = 0; i < nlocal; ++i){
       if (tag[i] == origin_tag){
         domain->unmap(x[i],image[i],vx);
         if ( (mask[i] & groupbit) == 0) {
           error->one(FLERR,"Specified surface origin atom not in group!");
           return;
         }
-        nfind++;
+        ++nfind;
         break;
       }
     }
-  } else{
-    for (int i=0; i<nlocal; i++){
+  } else {
+    for (int i = 0; i < nlocal; ++i){
       if (mask[i] & groupbit){
         domain->unmap(x[i],image[i],vx);
-        nfind++;
+        ++nfind;
         break;
       }
     }
@@ -630,11 +606,11 @@ void FixGFC::compmap(int flag)
   nfind *= 2;
   MPI_Gather(&nfind, 1, MPI_INT, recvcnts, 1, MPI_INT, 0, world);
   if (me == 0){
-    displs[0]=0;
-    for (int i=1; i<nprocs; i++) displs[i] = displs[i-1] + recvcnts[i-1];
-    int ntotal=0;
-    for (int i=0; i<nprocs; i++) ntotal += recvcnts[i];
-    if (ntotal<2) error->one(FLERR,"Surface origin not found!");
+    displs[0] = 0;
+    for (int i = 1; i < nprocs; ++i) displs[i] = displs[i-1] + recvcnts[i-1];
+    int ntotal = 0;
+    for (int i = 0; i < nprocs; ++i) ntotal += recvcnts[i];
+    if (ntotal < 2) error->one(FLERR,"Surface origin not found!");
   }
 
   double recvbuf[nprocs][2];
@@ -652,7 +628,7 @@ void FixGFC::compmap(int flag)
   memory->create(IndxAll,nGFatoms,2,"fix_gfc:IndxAll");
 
   nfind =0;
-  for (int i = 0; i < nlocal; i++) {
+  for (int i = 0; i < nlocal; ++i) {
     if (mask[i] & groupbit){
       domain->unmap(x[i],image[i],vx);
       itag  = tag[i];
@@ -673,18 +649,18 @@ void FixGFC::compmap(int flag)
       IndxLoc[nfind][0] = itag;
       IndxLoc[nfind][1] = idx;
 
-      nfind++;
+      ++nfind;
     }
   }
 
   nfind *= 2;
   // gather mapping info to all procs
   MPI_Allgather(&nfind, 1, MPI_INT, recvcnts, 1, MPI_INT, world);
-  displs[0]=0;
-  for (int i=1; i<nprocs; i++) displs[i] = displs[i-1] + recvcnts[i-1];
+  displs[0] = 0;
+  for (int i = 1; i < nprocs; ++i) displs[i] = displs[i-1] + recvcnts[i-1];
   MPI_Allgatherv(IndxLoc[0], nfind, MPI_INT, IndxAll[0], recvcnts, displs, MPI_INT, world);
 
-  for (int i=0; i<nGFatoms; i++){
+  for (int i = 0; i < nGFatoms; ++i){
     itag = IndxAll[i][0];
     idx  = IndxAll[i][1];
     tag2surf[itag] = idx;
@@ -698,7 +674,7 @@ void FixGFC::compmap(int flag)
   if (tag2surf.size() != surf2tag.size() || tag2surf.size() != static_cast<std::size_t>(nGFatoms) )
     error->all(FLERR,"Mapping info is incompleted/incorrect!");
 
-  return;
+return;
 }
 
 /* ----------------------------------------------------------------------
@@ -707,43 +683,40 @@ void FixGFC::compmap(int flag)
 
 void FixGFC::postprocess( )
 {
-  if (GFcounter<1) return;
+  if (GFcounter < 1) return;
 
-  ifreq =0;
+  ifreq = 0;
   int idim, jdim, ndim;
   double invGFcounter = 1.0 /double(GFcounter);
 
   // to get <Rq.Rq*>
-  for (idq=0; idq<mynq; idq++){
-    for (idim=0; idim<fft_dim2; idim++) Phi_q[idq][idim] = Rqsum[idq][idim]*invGFcounter;
-  }
+  for (idq = 0; idq < mynq; ++idq)
+  for (idim = 0; idim < fft_dim2; ++idim) Phi_q[idq][idim] = Rqsum[idq][idim]*invGFcounter;
 
   // to get <R>
-  for (idx=0; idx<mynpt; idx++){
-    for (idim=0; idim<fft_dim; idim++) Rnow[idx][idim] = Rsum[idx][idim] * invGFcounter;
-  }
+  for (idx = 0; idx < mynpt; ++idx)
+  for (idim = 0; idim < fft_dim; ++idim) Rnow[idx][idim] = Rsum[idx][idim] * invGFcounter;
 
   // to get <R>q
-  for (idim=0; idim<fft_dim; idim++){
+  for (idim = 0; idim < fft_dim; ++idim){
     int m = 0;
-    for (idx=0; idx<mynpt; idx++){
+    for (idx = 0; idx < mynpt; ++idx){
       fft_data[m++] = Rnow[idx][idim];
       fft_data[m++] = 0.;
     }
     fft->compute(fft_data,fft_data,-1);
     m = 0;
-    for (idq=0; idq<mynq; idq++){
+    for (idq = 0; idq < mynq; ++idq){
       Rqnow[idq][idim]  = std::complex<double>(fft_data[m], fft_data[m+1]);
       m += 2;
     }
   }
 
   // to get G(q) = <Rq.Rq*> - <R>q.<R*>q
-  for (idq=0; idq<mynq; idq++){
+  for (idq = 0; idq < mynq; ++idq){
     ndim = 0;
-    for (idim=0; idim<fft_dim; idim++){
-      for (jdim=0; jdim<fft_dim; jdim++) Phi_q[idq][ndim++] -= Rqnow[idq][idim]*conj(Rqnow[idq][jdim]);
-    }
+    for (idim = 0; idim < fft_dim; ++idim)
+    for (jdim = 0; jdim < fft_dim; ++jdim) Phi_q[idq][ndim++] -= Rqnow[idq][idim]*conj(Rqnow[idq][jdim]);
   }
 
   // to get Phi = KT.G^-1; normalization of FFTW data is done here
@@ -751,36 +724,32 @@ void FixGFC::postprocess( )
   double TempFac = invGFcounter*inv_nTemp;
   double NormFac = TempFac*nx*ny;
 
-  for (idim=0; idim<sysdim; idim++){
+  for (idim = 0; idim < sysdim; ++idim){
     kbtsqrt[idim] = sqrt(TempSum[idim]*NormFac);
     TempAve += TempSum[idim]*TempFac;
   }
   TempAve /= sysdim*boltz;
   
-  for (idq=0; idq<mynq; idq++){
+  for (idq = 0; idq < mynq; ++idq){
     GaussJordan(fft_dim, Phi_q[idq]);
-    ndim =0;
-    for (idim=0; idim<fft_dim; idim++){
-      for (jdim=0; jdim<fft_dim; jdim++){
-        Phi_q[idq][ndim++] *= kbtsqrt[idim%sysdim]*kbtsqrt[jdim%sysdim];
-      }
-    }
+    ndim = 0;
+    for (idim = 0; idim < fft_dim; ++idim)
+    for (jdim = 0; jdim < fft_dim; ++jdim) Phi_q[idq][ndim++] *= kbtsqrt[idim%sysdim]*kbtsqrt[jdim%sysdim];
   }
 
   // to collect all local Phi_q to root
-  displs[0]=0;
-  for (int i=0; i<nprocs; i++) recvcnts[i] = fft_cnts[i]*fft_dim*2;
-  for (int i=1; i<nprocs; i++) displs[i] = displs[i-1] + recvcnts[i-1];
+  displs[0] = 0;
+  for (int i = 0; i < nprocs; ++i) recvcnts[i] = fft_cnts[i]*fft_dim*2;
+  for (int i = 1; i < nprocs; ++i) displs[i] = displs[i-1] + recvcnts[i-1];
   MPI_Gatherv(Phi_q[0],mynq*fft_dim2*2,MPI_DOUBLE,Phi_all[0],recvcnts,displs,MPI_DOUBLE,0,world);
   
   // to collect all surfbasis and averaged it on root
   double sb_root[fft_dim];
-  if (fft_dim > sysdim)
-    MPI_Reduce (&surfbasis[1][0], &sb_root[sysdim], fft_dim-sysdim, MPI_DOUBLE, MPI_SUM, 0, world);
+  if (fft_dim > sysdim) MPI_Reduce (&surfbasis[1][0], &sb_root[sysdim], fft_dim-sysdim, MPI_DOUBLE, MPI_SUM, 0, world);
 
   if (me == 0){ // output by root
-    for (idim=0;      idim<sysdim;  idim++) sb_root[idim]  = 0.;
-    for (idim=sysdim; idim<fft_dim; idim++) sb_root[idim] /= double(nx)*double(ny)*double(GFcounter);
+    for (idim = 0;      idim < sysdim;  ++idim) sb_root[idim]  = 0.;
+    for (idim = sysdim; idim < fft_dim; ++idim) sb_root[idim] /= double(nx)*double(ny)*double(GFcounter);
 
     // write binary file
     char fname[MAXLINE];
@@ -802,33 +771,34 @@ void FixGFC::postprocess( )
     fclose(GFC_bin);
 
     // write log file
-    for (int i=0; i<60; i++) fprintf(gfclog,"#"); fprintf(gfclog,"\n");
+    for (int i = 0; i < 60; ++i) fprintf(gfclog,"#"); fprintf(gfclog,"\n");
     fprintf(gfclog, "# Current time step                      : " BIGINT_FORMAT "\n", update->ntimestep);
     fprintf(gfclog, "# Total number of GFC measurements       : %d\n", GFcounter);
     fprintf(gfclog, "# Average temperature of the measurement : %lg\n", TempAve);
     fprintf(gfclog, "# Boltzmann constant under current units : %lg\n", boltz);
     fprintf(gfclog, "# Basis of the surface unit cell         : ");
-    for (idim=0; idim<fft_dim; idim++) fprintf(gfclog,"%lg ", sb_root[idim]);
+    for (idim = 0; idim < fft_dim; ++idim) fprintf(gfclog,"%lg ", sb_root[idim]);
     fprintf(gfclog, "\n");
-    for (int i=0; i<60; i++) fprintf(gfclog,"#"); fprintf(gfclog,"\n");
+    for (int i = 0; i < 60; ++i) fprintf(gfclog,"#"); fprintf(gfclog,"\n");
     fprintf(gfclog, "# ix\t iy \t qx \t qy\t\t\t Phi(q)\n");
 
     int ix, iy;
     double qx, qy;
     idq =0;
-    for (ix=0; ix<nx; ix++){
+    for (ix = 0; ix < nx; ++ix){
       qx = (ix<=(nx/2))?(2.0*M_PI*ix/nx):(2.0*M_PI*(ix-nx)/nx);
-      for (iy=0; iy<ny; iy++){
+      for (iy = 0; iy < ny; ++iy){
         qy = (iy<=(ny/2))?(2.0*M_PI*iy/ny):(2.0*M_PI*(iy-ny)/ny);
         fprintf(gfclog,"%d %d %lg %lg", ix, iy, qx, qy);
-        for (idim=0; idim<fft_dim2; idim++) fprintf(gfclog, " %lg %lg", real(Phi_all[idq][idim]), imag(Phi_all[idq][idim]));
+        for (idim = 0; idim < fft_dim2; ++idim) fprintf(gfclog, " %lg %lg", real(Phi_all[idq][idim]), imag(Phi_all[idq][idim]));
         fprintf(gfclog, "\n");
-        idq++;
+        ++idq;
       }
     }
     fflush(gfclog);
   }
 
+return;
 }   // end of postprocess
 
 /* ----------------------------------------------------------------------
@@ -848,12 +818,12 @@ void FixGFC::GaussJordan(int n, double *Mat)
   indxr = new int[n];
   ipiv  = new int[n];
 
-  for (i=0; i<n; i++) ipiv[i] = 0;
-  for (i=0; i<n; i++){
+  for (i = 0; i < n; ++i) ipiv[i] = 0;
+  for (i = 0; i < n; ++i){
     big = 0.;
-    for (j=0; j<n; j++){
+    for (j = 0; j < n; ++j){
       if (ipiv[j] != 1){
-        for (k=0; k<n; k++){
+        for (k = 0; k < n; ++k){
           if (ipiv[k] == 0){
             idr = j*n+k;
             if (fabs(Mat[idr]) >= big){
@@ -869,7 +839,7 @@ void FixGFC::GaussJordan(int n, double *Mat)
     }
     ipiv[icol] += 1;
     if (irow != icol){
-      for (l=0; l<n; l++){
+      for (l = 0; l < n; ++l){
         idr  = irow*n+l;
         idc  = icol*n+l;
         dum  = Mat[idr];
@@ -885,24 +855,24 @@ void FixGFC::GaussJordan(int n, double *Mat)
     pivinv = 1./ Mat[idr];
     Mat[idr] = 1.;
     idr = icol*n;
-    for (l=0; l<n; l++) Mat[idr+l] *= pivinv;
-    for (ll=0; ll<n; ll++){
+    for (l = 0; l < n; ++l) Mat[idr+l] *= pivinv;
+    for (ll = 0; ll < n; ++ll){
       if (ll != icol){
         idc = ll*n+icol;
         dum = Mat[idc];
         Mat[idc] = 0.;
         idc -= icol;
-        for (l=0; l<n; l++) Mat[idc+l] -= Mat[idr+l]*dum;
+        for (l = 0; l < n; ++l) Mat[idc+l] -= Mat[idr+l]*dum;
       }
     }
   }
-  for (l=n-1; l>=0; l--){
+  for (l = n-1; l >= 0; --l){
     int rl = indxr[l];
     int cl = indxc[l];
     if (rl != cl){
-      for (k=0; k<n; k++){
-        idr = k*n+rl;
-        idc = k*n+cl;
+      for (k = 0; k < n; ++k){
+        idr = k*n + rl;
+        idc = k*n + cl;
         dum = Mat[idr];
         Mat[idr] = Mat[idc];
         Mat[idc] = dum;
@@ -912,6 +882,7 @@ void FixGFC::GaussJordan(int n, double *Mat)
   delete []indxr;
   delete []indxc;
   delete []ipiv;
+
 return;
 }
 
@@ -932,12 +903,12 @@ void FixGFC::GaussJordan(int n, std::complex<double> *Mat)
   indxr = new int[n];
   ipiv  = new int[n];
 
-  for (i=0; i<n; i++) ipiv[i] = 0;
-  for (i=0; i<n; i++){
+  for (i = 0; i < n; ++i) ipiv[i] = 0;
+  for (i = 0; i < n; ++i){
     big = 0.;
-    for (j=0; j<n; j++){
+    for (j = 0; j < n; ++j){
       if (ipiv[j] != 1){
-        for (k=0; k<n; k++){
+        for (k = 0; k < n; ++k){
           if (ipiv[k] == 0){
             idr = j*n+k;
             nmjk = norm(Mat[idr]);
@@ -954,7 +925,7 @@ void FixGFC::GaussJordan(int n, std::complex<double> *Mat)
     }
     ipiv[icol] += 1;
     if (irow != icol){
-      for (l=0; l<n; l++){
+      for (l = 0; l < n; ++l){
         idr  = irow*n+l;
         idc  = icol*n+l;
         dum  = Mat[idr];
@@ -970,24 +941,24 @@ void FixGFC::GaussJordan(int n, std::complex<double> *Mat)
     pivinv = 1./ Mat[idr];
     Mat[idr] = std::complex<double>(1.,0.);
     idr = icol*n;
-    for (l=0; l<n; l++) Mat[idr+l] *= pivinv;
-    for (ll=0; ll<n; ll++){
+    for (l = 0; l < n; ++l) Mat[idr+l] *= pivinv;
+    for (ll = 0; ll < n; ++ll){
       if (ll != icol){
         idc = ll*n+icol;
         dum = Mat[idc];
         Mat[idc] = 0.;
         idc -= icol;
-        for (l=0; l<n; l++) Mat[idc+l] -= Mat[idr+l]*dum;
+        for (l = 0; l < n; ++l) Mat[idc+l] -= Mat[idr+l]*dum;
       }
     }
   }
-  for (l=n-1; l>=0; l--){
+  for (l = n-1; l >= 0; --l){
     int rl = indxr[l];
     int cl = indxc[l];
     if (rl != cl){
-      for (k=0; k<n; k++){
-        idr = k*n+rl;
-        idc = k*n+cl;
+      for (k = 0; k < n; ++k){
+        idr = k*n + rl;
+        idc = k*n + cl;
         dum = Mat[idr];
         Mat[idr] = Mat[idc];
         Mat[idc] = dum;
@@ -997,7 +968,7 @@ void FixGFC::GaussJordan(int n, std::complex<double> *Mat)
   delete []indxr;
   delete []indxc;
   delete []ipiv;
+
 return;
 }
-
 /* --------------------------------------------------------------------*/
