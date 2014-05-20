@@ -58,10 +58,10 @@ FixGFC::FixGFC(LAMMPS *lmp,  int narg, char **arg) : Fix(lmp, narg, arg)
   
   if (narg<7) error->all(FLERR,"Illegal fix gfc command: number of arguments < 7");
 
-  nevery = atoi(arg[3]);   // Calculate this fix every n steps!
+  nevery = force->inumeric(FLERR,arg[3]);   // Calculate this fix every n steps!
   if (nevery <= 0) error->all(FLERR,"Illegal fix gfc command: nevery must >0");
 
-  nfreq  = atoi(arg[4]);   // frequency to output result
+  nfreq  = force->inumeric(FLERR,arg[4]);   // frequency to output result
   if (nfreq <=0) error->all(FLERR,"Illegal fix gfc command: nfreq must >0");
 
   waitsteps = ATOBIGINT(arg[5]); // Wait this many timesteps before actually measuring GFC's
@@ -83,21 +83,21 @@ FixGFC::FixGFC(LAMMPS *lmp,  int narg, char **arg) : Fix(lmp, narg, arg)
     // surface vector U. if not given, will be determined from lattice info
     if (strcmp(arg[iarg],"su") == 0){
       if (iarg+3 > narg) error->all(FLERR,"Insufficient command line options for fix gfc.");
-      surfvec[0][0] = atof(arg[++iarg]);
-      surfvec[0][1] = atof(arg[++iarg]);
+      surfvec[0][0] = force->numeric(FLERR,arg[++iarg]);
+      surfvec[0][1] = force->numeric(FLERR,arg[++iarg]);
       fsurfmap |= 1;
 
     // surfactor vector V. if not given for 3D, will be determined from lattice info
     } else if (strcmp(arg[iarg],"sv") == 0){
       if (iarg+3 > narg) error->all(FLERR,"Insufficient command line options for fix gfc.");
-      surfvec[1][0] = atof(arg[++iarg]);
-      surfvec[1][1] = atof(arg[++iarg]);
+      surfvec[1][0] = force->numeric(FLERR,arg[++iarg]);
+      surfvec[1][1] = force->numeric(FLERR,arg[++iarg]);
       fsurfmap |= 2;
 
     // tag of surface origin atom
     } else if (strcmp(arg[iarg],"origin") == 0){
       if (iarg+2 > narg) error->all(FLERR,"Insufficient command line options for fix gfc.");
-      origin_tag = atoi(arg[++iarg]);
+      origin_tag = force->inumeric(FLERR,arg[++iarg]);
 
     // read the mapping of surface atoms from file! no surface vector is needed now
     } else if (strcmp(arg[iarg],"map") == 0){
@@ -160,7 +160,7 @@ FixGFC::FixGFC(LAMMPS *lmp,  int narg, char **arg) : Fix(lmp, narg, arg)
   for (int i = 1; i < nprocs; ++i) fft_disp[i] = fft_disp[i-1] + fft_cnts[i-1];
   delete []nx_loc;
 
-  fft   = new FFT3d(lmp,world,1,ny,nx,0,0,0,ny-1,nxlo,nxhi,0,0,0,ny-1,nxlo,nxhi,0,0,&mysize);
+  fft   = new FFT3d(lmp,world,1,ny,nx,0,0,0,ny-1,nxlo,nxhi,0,0,0,ny-1,nxlo,nxhi,0,0,&mysize,0);
   memory->create(fft_data, MAX(1,mynq)*2, "fix_gfc:fft_data");
 
   // allocate variables; MAX(1,... is used because NULL buffer will result in error for MPI
@@ -479,9 +479,9 @@ void FixGFC::readmap()
 
   // first line: nx, ny, and nucell
   if (fgets(strtmp,MAXLINE,fp) == NULL) error->all(FLERR,"Error while reading header of mapping file!");
-  nx = atoi(strtok(strtmp, " \n\t\r\f"));
-  ny = atoi(strtok(NULL,   " \n\t\r\f"));
-  nucell = atoi(strtok(NULL,   " \n\t\r\f"));
+  nx = force->inumeric(FLERR,strtok(strtmp, " \n\t\r\f"));
+  ny = force->inumeric(FLERR,strtok(NULL,   " \n\t\r\f"));
+  nucell = force->inumeric(FLERR,strtok(NULL,   " \n\t\r\f"));
   if (nx*ny*nucell != nGFatoms) error->all(FLERR,"FFT mesh and number of atoms in group mismatch!");
   
   // second line of mapfile is comment
@@ -491,10 +491,10 @@ void FixGFC::readmap()
   // the remaining lines carry the mapping info
   for (int i = 0; i < nGFatoms; ++i){
     if (fgets(strtmp,MAXLINE,fp) == NULL) {info = 1; break;}
-    ix = atoi(strtok(strtmp, " \n\t\r\f"));
-    iy = atoi(strtok(NULL,   " \n\t\r\f"));
-    iu = atoi(strtok(NULL,   " \n\t\r\f"));
-    itag = atoi(strtok(NULL,   " \n\t\r\f"));
+    ix = force->inumeric(FLERR,strtok(strtmp, " \n\t\r\f"));
+    iy = force->inumeric(FLERR,strtok(NULL,   " \n\t\r\f"));
+    iu = force->inumeric(FLERR,strtok(NULL,   " \n\t\r\f"));
+    itag = force->inumeric(FLERR,strtok(NULL,   " \n\t\r\f"));
 
     // check if indices are in correct range
     if (ix < 0 || ix >= nx || iy < 0 || iy >= ny || iu < 0 || iu >= nucell) {info = 2; break;}
