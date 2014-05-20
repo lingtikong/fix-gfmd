@@ -64,7 +64,7 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
   prefix = new char[n];             // get prefix
   strcpy(prefix, arg[iarg++]);
 
-  instyle = atoi(arg[iarg]);        // get instyle
+  instyle = force->inumeric(FLERR,arg[iarg]);        // get instyle
   if (instyle<0||instyle>3) error->all(FLERR,"Wrong command line option");
 
   if (instyle & 1){                 // get original position file name, if supplied
@@ -95,21 +95,21 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
     // surface vector U. if not given, will be determined from lattice info
     if (strcmp(arg[iarg],"su") == 0){
       if (iarg+3 > narg) error->all(FLERR,"Insufficient command option for su.");
-      surfvec[0][0] = atof(arg[++iarg]);
-      surfvec[0][1] = atof(arg[++iarg]);
+      surfvec[0][0] = force->numeric(FLERR,arg[++iarg]);
+      surfvec[0][1] = force->numeric(FLERR,arg[++iarg]);
       fsurfmap |= 1;
 
     // surfactor vector V. if not given for 3D, will be determined from lattice info
     } else if (strcmp(arg[iarg],"sv") == 0){
       if (iarg+3 > narg) error->all(FLERR,"Insufficient command option for sv.");
-      surfvec[1][0] = atof(arg[++iarg]);
-      surfvec[1][1] = atof(arg[++iarg]);
+      surfvec[1][0] = force->numeric(FLERR,arg[++iarg]);
+      surfvec[1][1] = force->numeric(FLERR,arg[++iarg]);
       fsurfmap |= 2;
 
     // to get the tag of surface origin atom
     } else if (strcmp(arg[iarg],"origin") == 0){
       if (iarg+2 > narg) error->all(FLERR,"Insufficient command option for origin.");
-      origin_tag = atoi(arg[++iarg]);
+      origin_tag = force->inumeric(FLERR,arg[++iarg]);
 
     // read the mapping of surface atoms from file, no surface vector is needed now
     } else if (strcmp(arg[iarg],"map") == 0){
@@ -123,12 +123,12 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
     // extra load added to GF atoms
     } else if (strcmp(arg[iarg],"load") ==0){
       if (iarg+2 > narg) error->all(FLERR,"Insufficient command option for load.");
-      load = atof(arg[++iarg]);
+      load = force->numeric(FLERR,arg[++iarg]);
 
     // frequency to output elastic force
     } else if (strcmp(arg[iarg],"output") ==0){
       if (iarg+2 > narg) error->all(FLERR,"Insufficient command option for output.");
-      noutfor = atoi(arg[++iarg]);
+      noutfor = force->inumeric(FLERR,arg[++iarg]);
 
     // whether/how to reset xeq based on surface lattice info from gfc
     } else if (strcmp(arg[iarg],"reset_xeq") ==0){
@@ -145,7 +145,7 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
       
     } else if (strcmp(arg[iarg],"nasr") ==0){
       if (iarg+2 > narg) error->all(FLERR,"Insufficient command option for nasr.");
-      nasr = atoi(arg[++iarg]);
+      nasr = force->inumeric(FLERR,arg[++iarg]);
       
     } else {
       char str[MAXLINE];
@@ -267,7 +267,7 @@ FixGFMD::FixGFMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
   for (int i = 0; i < nprocs; ++i) fft_cnts[i] = nx_loc[i]*ny*fft_dim;
   for (int i = 1; i < nprocs; ++i) fft_disp[i] = fft_disp[i-1] + fft_cnts[i-1];
 
-  fft = new FFT3d(lmp,world,1,ny,nx,0,0,0,ny-1,nxlo,nxhi,0,0,0,ny-1,nxlo,nxhi,0,0,&mysize);
+  fft = new FFT3d(lmp,world,1,ny,nx,0,0,0,ny-1,nxlo,nxhi,0,0,0,ny-1,nxlo,nxhi,0,0,&mysize,0);
   memory->create(fft_data, mynq*2, "fix_gfc:fft_data");
 
   // write FFT assignment info to log file
@@ -792,9 +792,9 @@ void FixGFMD::readmap()
     sprintf(str,"Error %d while reading header info from file: %s",info,mapfile);
     error->one(FLERR,str);
   }
-  nx = atoi(strtok(strtmp, " \n\t\r\f"));
-  ny = atoi(strtok(NULL,   " \n\t\r\f"));
-  nucell = atoi(strtok(NULL,   " \n\t\r\f"));
+  nx = force->inumeric(FLERR,strtok(strtmp, " \n\t\r\f"));
+  ny = force->inumeric(FLERR,strtok(NULL,   " \n\t\r\f"));
+  nucell = force->inumeric(FLERR,strtok(NULL,   " \n\t\r\f"));
   if (nx*ny*nucell != nGFatoms) error->all(FLERR,"Number of atoms from FFT mesh and group mismatch");
 
   if (fgets(strtmp,MAXLINE,fp) == NULL){ // second line of mapfile is comment
@@ -806,10 +806,10 @@ void FixGFMD::readmap()
   int ix, iy, iu;
   for (int i = 0; i < nGFatoms; ++i){
     if (fgets(strtmp,MAXLINE,fp) == NULL){info = 1; break;}
-    ix = atoi(strtok(strtmp, " \n\t\r\f"));
-    iy = atoi(strtok(NULL,   " \n\t\r\f"));
-    iu = atoi(strtok(NULL,   " \n\t\r\f"));
-    itag = atoi(strtok(NULL,   " \n\t\r\f"));
+    ix = force->inumeric(FLERR,strtok(strtmp, " \n\t\r\f"));
+    iy = force->inumeric(FLERR,strtok(NULL,   " \n\t\r\f"));
+    iu = force->inumeric(FLERR,strtok(NULL,   " \n\t\r\f"));
+    itag = force->inumeric(FLERR,strtok(NULL,   " \n\t\r\f"));
     // check if index is in correct range
     if (ix < 0 || ix >= nx || iy < 0 || iy >= ny || iu < 0 || iu >= nucell) {info = 2; break;} // check if index is in correct range
     if (itag < 1 || itag > static_cast<int>(atom->natoms)) {info = 3; break;}      // 1 <= itag <= natoms
